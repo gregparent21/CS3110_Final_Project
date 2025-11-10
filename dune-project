@@ -19,7 +19,7 @@
  (name FinalProject)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml)
+ (depends ocaml camlimages)
  (tags
   ("add topics" "to describe" your project)))
 
