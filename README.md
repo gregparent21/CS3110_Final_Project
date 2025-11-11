@@ -10,7 +10,7 @@ GenAI Usage:
 
 Currently to run on Mac (from what I've seen online you don't need the first 2 commands on windows, we are essentially emulating a windows environment): 
 - Run [open -a XQuartz]
-- Run [echo $DISPLAY]
+- Run [echo $DISPLAY=:0]
 - Run [dune exec bin/main.exe /Users/gregoryparent/Downloads/Cornell/"Semester 3"/CS3110/FinalProject/CS3110_Final_Project/data/Homer_Simpson.png]
 
 Notes: 
