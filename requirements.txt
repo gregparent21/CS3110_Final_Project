@@ -1,0 +1,8 @@
+graphics
+camlimages
+camlimages.core
+camlimages.png
+camlimages.jpeg
+camlimages.gif
+camlimages.tiff
+unix
