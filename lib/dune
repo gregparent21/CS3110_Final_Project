@@ -1,2 +1,3 @@
 (library
- (name FinalProject))
+ (name FinalProject)
+ (modules ImageOps))
