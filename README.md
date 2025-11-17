@@ -11,7 +11,7 @@ GenAI Usage:
 
 
 Currently to run on Mac (from what I've seen online you don't need the first 2 commands on windows, we are essentially emulating a windows environment): 
-- Must opam install everything in requirements.txt (also install Xquartz on mac (and maybe windows too))
+- Must opam install everything in requirements.txt (also install Xquartz on mac)
 - Run [open -a XQuartz]
 - Run [echo $DISPLAY=:0]
 - Run [dune exec bin/main.exe data/Homer_Simpson.png]

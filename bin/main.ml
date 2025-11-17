@@ -124,13 +124,19 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
   draw_rect toolbar_x 0 (win_w - toolbar_x) win_h;
   
   let button_y = win_h - 60 in
-  let button_w = 80 in
+  let button_w = 90 in
   let button_h = 40 in
   
   (* Draw Cut button *)
   draw_button toolbar_x button_y button_w button_h "Cut" (current_tool = "cut");
-  moveto (toolbar_x + 5) (button_y + button_h + 10);
-  draw_string "Click to select tool"
+  moveto (toolbar_x + 5) (button_y + button_h + 5);
+  draw_string "Click to select tool";
+
+  let button_compress_y = win_h - 120 in
+  draw_button toolbar_x button_compress_y button_w button_h "Compress" (
+    current_tool = "compress");
+  moveto (toolbar_x + 5) (button_y + button_h - 60);
+  draw_string "Click to compress image"
 
 (** [handle_interactive_cut img_x img_y w h img_data toolbar_x] 
     collects polygon points and applies cut_advanced *)
