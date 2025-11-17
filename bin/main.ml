@@ -102,6 +102,107 @@ let draw_axes img_x img_y w h =
     draw_string (string_of_int j)
   done
 
+(** [draw_button x y w h label selected] draws a button with text. 
+    Fills with light gray if selected, white otherwise. *)
+let draw_button x y w h label selected =
+  if selected then set_color (rgb 200 200 200) else set_color white;
+  fill_rect x y w h;
+  set_color black;
+  draw_rect x y w h;
+  moveto (x + 5) (y + h / 2 - 4);
+  draw_string label
+
+(** [is_point_in_rect px py x y w h] checks if point (px, py) is inside rect *)
+let is_point_in_rect px py x y w h =
+  px >= x && px <= x + w && py >= y && py <= y + h
+
+(** [draw_toolbar win_w win_h toolbar_x current_tool] draws tool buttons on the right side *)
+let draw_toolbar win_w win_h toolbar_x current_tool =
+  set_color (rgb 220 220 220);
+  fill_rect toolbar_x 0 (win_w - toolbar_x) win_h;
+  set_color black;
+  draw_rect toolbar_x 0 (win_w - toolbar_x) win_h;
+  
+  let button_y = win_h - 60 in
+  let button_w = 80 in
+  let button_h = 40 in
+  
+  (* Draw Cut button *)
+  draw_button toolbar_x button_y button_w button_h "Cut" (current_tool = "cut");
+  moveto (toolbar_x + 5) (button_y + button_h + 10);
+  draw_string "Click to select tool"
+
+(** [handle_interactive_cut img_x img_y w h img_data toolbar_x] 
+    collects polygon points and applies cut_advanced *)
+let handle_interactive_cut img_x img_y w h img_data toolbar_x =
+  let clicked_points = ref [] in
+  let rec cut_loop current_tool =
+    if button_down () then
+      let screen_x, screen_y = mouse_pos () in
+      (* Check if clicked on toolbar *)
+      if screen_x >= toolbar_x then (
+        if screen_y >= size_y () - 60 && screen_y <= size_y () - 20 then (
+          Printf.printf "Cut tool selected! Click on image to set points. Press 'c' to apply cut, 'r' to reset.\n";
+          flush stdout;
+          Unix.sleepf 0.2;
+          cut_loop "cut"
+        ) else (
+          Unix.sleepf 0.2;
+          cut_loop current_tool
+        )
+      ) else (
+        (* Click on image *)
+        let img_px, img_py = screen_to_image_coords screen_x screen_y img_x img_y in
+        if current_tool = "cut" && is_within_bounds img_px img_py w h then (
+          clicked_points := (img_px, img_py) :: !clicked_points;
+          Printf.printf "Point added: (%d, %d). Total: %d\n" img_px img_py (List.length !clicked_points);
+          flush stdout;
+          Unix.sleepf 0.2;
+          cut_loop current_tool
+        ) else (
+          Printf.printf "No tool selected or click outside bounds\n";
+          Unix.sleepf 0.2;
+          cut_loop current_tool
+        )
+      )
+    else if key_pressed () then
+      let key = read_key () in
+      if key = 'c' && current_tool = "cut" && List.length !clicked_points >= 2 then (
+        (* Apply cut *)
+        let cut_data = cut_advanced img_data (List.rev !clicked_points) in
+        Printf.printf "Cut applied with %d points!\n" (List.length !clicked_points);
+        flush stdout;
+        
+        (* Redraw *)
+        let new_img = Graphics.make_image cut_data in
+        clear_graph ();
+        draw_image new_img img_x img_y;
+        draw_axes img_x img_y w h;
+        draw_toolbar (size_x ()) (size_y ()) toolbar_x current_tool;
+        synchronize ();
+        
+        (* Reset and continue *)
+        clicked_points := [];
+        Printf.printf "Points reset. Select a tool and continue.\n";
+        flush stdout;
+        cut_loop ""
+      ) else if key = 'r' then (
+        clicked_points := [];
+        Printf.printf "Points reset.\n";
+        flush stdout;
+        cut_loop current_tool
+      ) else if key = 'q' then
+        Printf.printf "Exiting.\n"
+      else (
+        cut_loop current_tool
+      )
+    else (
+      Unix.sleepf 0.01;
+      cut_loop current_tool
+    )
+  in
+  cut_loop ""
+
 (** [handle_click img_x img_y w h] waits for mouse clicks and prints the 
     image-local coordinates of clicked pixels *)
 let handle_click img_x img_y w h =
@@ -147,12 +248,27 @@ let () =
 
   let win_w = size_x () in
   let win_h = size_y () in
+  let toolbar_x = 650 in
+  
   clear_graph ();
-  let img_x = (win_w - w) / 2 in
+  let img_x = (toolbar_x - w) / 2 in
   let img_y = (win_h - h) / 2 in
   draw_image img img_x img_y;
 
+  (* Convert image to pixel array for cut operations *)
+  let data = Array.make_matrix h w 0 in
+  for y = 0 to h - 1 do
+    for x = 0 to w - 1 do
+      data.(y).(x) <- point_color x y
+    done
+  done;
+
   draw_axes img_x img_y w h;
+  draw_toolbar win_w win_h toolbar_x "";
   synchronize ();
 
-  handle_click img_x img_y w h
+  Printf.printf "Click the 'Cut' button to select the cut tool, then click on image to set polygon points.\n";
+  Printf.printf "Press 'c' to apply cut, 'r' to reset points, 'q' to quit.\n";
+  flush stdout;
+
+  handle_interactive_cut img_x img_y w h data toolbar_x
