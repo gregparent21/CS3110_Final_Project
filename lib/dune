@@ -1,3 +1,4 @@
 (library
  (name FinalProject)
- (modules ImageOps))
+ (modules ImageOps)
+ (libraries graphics))
