@@ -14,7 +14,7 @@ Currently to run on Mac (from what I've seen online you don't need the first 2 c
 - Must opam install everything in requirements.txt (also install Xquartz on mac (and maybe windows too))
 - Run [open -a XQuartz]
 - Run [echo $DISPLAY=:0]
-- Run [dune exec bin/main.exe /Users/gregoryparent/Downloads/Cornell/"Semester 3"/CS3110/FinalProject/CS3110_Final_Project/data/Homer_Simpson.png]
+- Run [dune exec bin/main.exe data/Homer_Simpson.png]
 
 Notes: 
 - Currently only works with png
