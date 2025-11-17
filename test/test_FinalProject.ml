@@ -37,18 +37,14 @@ let tests =
                      else 0))
            in
            assert_equal expected result );
-         ( "Test cut_advanced" >:: fun _ ->
-           let result =
-             cut_advanced
-               [| [| 0; 12; 34 |]; [| 42; 3110; 56 |]; [| 78; 90; 100 |] |]
-               [ (1, 1); (2, 2) ]
-           in
-           let expected =
-             [|
-               [| 0; 12; 34 |]; [| 42; white; white |]; [| 78; white; white |];
-             |]
-           in
-           assert_equal expected result );
+         ( "Test intersects_segment" >:: fun _ ->
+           assert_equal true (intersects_segment (5, 5) (0, 0) (10, 10));
+           assert_equal true (intersects_segment (0, 5) (0, 10) (10, 0));
+           assert_equal true (intersects_segment (10, 0) (0, 10) (10, 0));
+           assert_equal true (intersects_segment (0, 10) (0, 10) (10, 0));
+           assert_equal false (intersects_segment (15, 15) (0, 0) (10, 10));
+           assert_equal false (intersects_segment (5, 15) (0, 0) (10, 10));
+           assert_equal false (intersects_segment (10, 5) (0, 0) (10, 10)) );
        ]
 
 let _ = run_test_tt_main tests

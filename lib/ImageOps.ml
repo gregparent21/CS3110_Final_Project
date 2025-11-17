@@ -51,14 +51,49 @@ let winding_number (p_x, p_y) polygon =
 
 (* Currently uses an inefficient algorithm (checks every possible pixel) that
    handles even complex polygons. The algorithm is much simpler if we care about
-   only simple polygons. *)
-let cut_advanced data pairs =
+   only simple polygons. let cut_advanced data pairs = try Array.mapi (fun y row
+   -> Array.mapi (fun x rgb -> if winding_number (x, y) pairs <> 0 then
+   Graphics.rgb 255 255 255 else rgb) row) data with _ -> raise (Failure
+   "cut_advanced: invalid coordinates")*)
+
+(* Determines if the ray in the positive x infinity direction from (x, y)
+   intersects the line segment from (x1, y1) to (x2, y2).*)
+let intersects_segment (x, y) (x1, y1) (x2, y2) =
+  (* Ensure y1 <= y2 *)
+  let x1, y1, x2, y2 =
+    if y1 <= y2 then (x1, y1, x2, y2) else (x2, y2, x1, y1)
+  in
+  (* Check if horizontal ray crosses the segment *)
+  y >= y1 && y <= y2
+  && float x
+     <= (float x2 -. float x1)
+        *. (float y -. float y1)
+        /. (float y2 -. float y1)
+        +. float x1
+
+(* Currently supports only SIMPLE polygons. *)
+let cut_advanced data (pairs : (int * int) list) =
+  let n = List.length pairs in
+  if n < 3 then
+    raise (Failure "cut_advanced: polygon must have at least 3 vertices");
   try
+    let segments =
+      List.mapi
+        (fun i pair -> (pair, List.nth pairs ((i + 1) mod List.length pairs)))
+        pairs
+    in
     Array.mapi
       (fun y row ->
         Array.mapi
           (fun x rgb ->
-            if winding_number (x, y) pairs <> 0 then Graphics.rgb 255 255 255
+            let crossings =
+              List.fold_left
+                (fun acc (s, e) ->
+                  if intersects_segment (x, y) s e then acc + 1 else acc)
+                0 segments
+            in
+            if crossings mod 2 = 1 || List.mem (x, y) pairs then
+              Graphics.rgb 255 255 255
             else rgb)
           row)
       data
