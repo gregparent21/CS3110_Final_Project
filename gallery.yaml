@@ -1,0 +1,36 @@
+---
+# Members of your group.
+group:  
+  - name: Gregory Parent
+    netid: gmp89
+  - name: Evan Holly
+    netid: egh67
+  - name: Julian Meinke
+    netid: jm2874
+  - name: Milo Schlittgen-Li
+    netid: ms3626
+  - name: Nate Benz
+    netid: nab267
+
+# Your PM.
+pm:
+  name: Allison Avila
+  netid: ana59
+# Set to false if you don't want your gallery entry to be public.
+publish: true
+# Pithy title
+title: "CamlShop"
+# OK if this is a Cornell Github link, but public gallery viewers won't be able to see it.
+git-repo: "https://github.com/gregparent21/CS3110_Final_Project"
+# Replace the URL with your own demo video.
+demo-video-url: "https://www.youtube.com/watch?v=eSBybJGZoCU"
+# Write a short, attention-grabbing description of your project.
+desc: >
+  Our project is an interactive calculator. It supports standard mathematical
+  operations like addition, multiplication, negation, and division on both
+  integers and floating-point numbers. The interface is completely
+  programmable--new functions can easily be defined and assigned to new "keys"
+  in the visual interface.
+
+  Standard visual I/O is supported, but the calculator can also emit sound. By
+  pressing down a special key, it can play a fugue by J.S. Bach.

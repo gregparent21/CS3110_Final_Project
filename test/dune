@@ -1,3 +1,4 @@
 (test
  (name test_FinalProject)
+ ; (modules test_FinalProject test_Image_Loading)
  (libraries ounit2 FinalProject graphics))
