@@ -131,31 +131,48 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
   moveto (toolbar_x + 5) (button_y + button_h + 5);
   draw_string "Click to select cut tool";
 
+  (*Draw Compress button *)
   let button_compress_y = win_h - 120 in
   draw_button toolbar_x button_compress_y button_w button_h "Compress"
     (current_tool = "compress");
   moveto (toolbar_x + 5) (button_y + button_h - 60);
   draw_string "Click to compress image"
 
-(** [handle_interactive_cut img_x img_y w h img_data toolbar_x] collects polygon
-    points and applies cut_advanced *)
-let handle_interactive_cut img_x img_y w h img_data toolbar_x =
+(**[handle_buttons] allows the user to interact with buttons and alter an image
+   accordingly.*)
+let handle_buttons img_x img_y w h img_data toolbar_x =
   let clicked_points = ref [] in
-  let rec cut_loop current_tool =
+  (*These lengths defined below are from [draw_toolbar]. Must accurately reflect
+    any of the pre-defined values.*)
+  let button_width = 90 in
+  let button_height = 40 in
+  let cut_y = size_y () - 60 in
+  let compress_y = size_y () - 120 in
+  let rec event_loop current_tool =
+    let screen_x, screen_y = mouse_pos () in
     if button_down () then
-      let screen_x, screen_y = mouse_pos () in
-      (* Check if clicked on toolbar *)
       if screen_x >= toolbar_x then
-        if screen_y >= size_y () - 60 && screen_y <= size_y () - 20 then (
+        if
+          is_point_in_rect screen_x screen_y toolbar_x cut_y button_width
+            button_height
+        then (
           Printf.printf
             "Cut tool selected! Click on image to set points. Press 'c' to \
              apply cut, 'r' to reset.\n";
           flush stdout;
           Unix.sleepf 0.2;
-          cut_loop "cut")
+          event_loop "cut")
+        else if
+          is_point_in_rect screen_x screen_y toolbar_x compress_y button_width
+            button_height
+        then (
+          Printf.printf "Compress tool selected! Compressing image.\n";
+          flush stdout;
+          Unix.sleepf 0.2;
+          event_loop "compress")
         else (
           Unix.sleepf 0.2;
-          cut_loop current_tool)
+          event_loop current_tool)
       else
         (* Click on image *)
         let img_px, img_py =
@@ -167,11 +184,11 @@ let handle_interactive_cut img_x img_y w h img_data toolbar_x =
             (List.length !clicked_points);
           flush stdout;
           Unix.sleepf 0.2;
-          cut_loop current_tool)
+          event_loop current_tool)
         else (
           Printf.printf "No tool selected or click outside bounds\n";
           Unix.sleepf 0.2;
-          cut_loop current_tool)
+          event_loop current_tool)
     else if key_pressed () then
       let key = read_key () in
       if key = 'c' && current_tool = "cut" && List.length !clicked_points > 2
@@ -194,19 +211,19 @@ let handle_interactive_cut img_x img_y w h img_data toolbar_x =
         clicked_points := [];
         Printf.printf "Points reset. Select a tool and continue.\n";
         flush stdout;
-        cut_loop "")
+        event_loop "")
       else if key = 'r' then (
         clicked_points := [];
         Printf.printf "Points reset.\n";
         flush stdout;
-        cut_loop current_tool)
+        event_loop current_tool)
       else if key = 'q' then Printf.printf "Exiting.\n"
-      else cut_loop current_tool
+      else event_loop current_tool
     else (
       Unix.sleepf 0.01;
-      cut_loop current_tool)
+      event_loop current_tool)
   in
-  cut_loop ""
+  event_loop ""
 
 (** [handle_click img_x img_y w h] waits for mouse clicks and prints the
     image-local coordinates of clicked pixels *)
@@ -269,8 +286,11 @@ let () =
 
   Printf.printf
     "Click the 'Cut' button to select the cut tool, then click on image to set \
-     polygon points.\n";
-  Printf.printf "Press 'c' to apply cut, 'r' to reset points, 'q' to quit.\n";
+     polygon points.\n\
+     Click the 'Compress' button to select the compression tool.\n";
+  Printf.printf
+    "Press 'c' to apply cut, 'r' to reset points, 's' to compress the image, \
+     'q' to quit.\n";
   flush stdout;
 
-  handle_interactive_cut img_x img_y w h data toolbar_x
+  handle_buttons img_x img_y w h data toolbar_x

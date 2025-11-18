@@ -26,11 +26,13 @@ val cut_advanced : int array array -> (int * int) list -> int array array
     between each two conseuctive pairs of integers (wrapping the last pair to
     the first). *)
 
-val shrink : int array array -> int array array
+val shrink : int array array -> int -> int array array
 (**[shrink] "compresses" a given image by reducing its total pixel count and
-   averaging the RGB values of neighboring pixels.*)
+   averaging the RGB values of neighboring pixels. Reduces the size of an image
+   by an user specified factor.*)
 
-val replace_color: int array array -> (int * int * int) -> (int * int * int) -> int array array
-   (** [replace_color data (src_r, src_g, src_b) (dst_r, dst_g, dst_b)] returns
-    a new pixel matrix where every pixel whose RGB components exactly match
+val replace_color :
+  int array array -> int * int * int -> int * int * int -> int array array
+(** [replace_color data (src_r, src_g, src_b) (dst_r, dst_g, dst_b)] returns a
+    new pixel matrix where every pixel whose RGB components exactly match
     [(src_r, src_g, src_b)] is replaced with [(dst_r, dst_g, dst_b)]. *)

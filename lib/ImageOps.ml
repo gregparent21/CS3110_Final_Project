@@ -135,30 +135,34 @@ let average_neighbors (data : int array array) (factor : int) (x : int)
     (!avg_r lsl 16) lor (!avg_g lsl 8) lor !avg_b
   with _ -> failwith "Out of bounds"
 
-let shrink (data : int array array) : int array array =
-  try
-    let data' =
-      Array.make_matrix (Array.length data / 3) (Array.length data.(0) / 3) 0
-    in
-    for x = 0 to (Array.length data / 3) - 1 do
-      for y = 0 to (Array.length data.(0) / 3) - 1 do
-        data'.(x).(y) <- average_neighbors data 3 (x * 3) (y * 3)
-      done
-    done;
-    data'
-  with _ -> failwith "Out of bounds"
+let shrink (data : int array array) (factor : int) : int array array =
+  if factor > 0 then
+    try
+      let data' =
+        Array.make_matrix
+          (Array.length data / factor)
+          (Array.length data.(0) / factor)
+          0
+      in
+      for x = 0 to (Array.length data / factor) - 1 do
+        for y = 0 to (Array.length data.(0) / factor) - 1 do
+          data'.(x).(y) <-
+            average_neighbors data factor (x * factor) (y * factor)
+        done
+      done;
+      data'
+    with _ -> failwith "Out of bounds"
+  else failwith "Invalid input"
 
-
-let replace_color (data : int array array) 
-  ((src_r, src_g, src_b) : int * int * int)
-  ((dst_r, dst_g, dst_b) : int * int * int) : int array array =
+let replace_color (data : int array array)
+    ((src_r, src_g, src_b) : int * int * int)
+    ((dst_r, dst_g, dst_b) : int * int * int) : int array array =
   Array.map
     (fun row ->
       Array.map
         (fun pixel ->
           if r pixel = src_r && g pixel = src_g && b pixel = src_b then
             Graphics.rgb dst_r dst_g dst_b
-          else
-            pixel)
+          else pixel)
         row)
     data
