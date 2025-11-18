@@ -296,9 +296,7 @@ let () =
     "Click the 'Cut' button to select the cut tool, then click on image to set \
      polygon points.\n\
      Click the 'Compress' button to select the compression tool.\n";
-  Printf.printf
-    "Press 'c' to apply cut, 'r' to reset points, 's' to compress the image, \
-     'q' to quit.\n";
+  Printf.printf "Press 'c' to apply cut, 'r' to reset points, 'q' to quit.\n";
   flush stdout;
 
   handle_buttons img_x img_y w h data toolbar_x
