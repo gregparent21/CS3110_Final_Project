@@ -64,7 +64,7 @@ let intersects_segment (x, y) (x1, y1) (x2, y2) =
     if y1 <= y2 then (x1, y1, x2, y2) else (x2, y2, x1, y1)
   in
   (* Check if horizontal ray crosses the segment *)
-  y >= y1 && y <= y2
+  y > y1 && y <= y2
   && float x
      <= (float x2 -. float x1)
         *. (float y -. float y1)
@@ -92,7 +92,10 @@ let cut_advanced data (pairs : (int * int) list) =
                   if intersects_segment (x, y) s e then acc + 1 else acc)
                 0 segments
             in
-            if crossings mod 2 = 1 || List.mem (x, y) pairs then
+            let on =
+              List.exists (fun (px, py) -> on_segment px py (x, y)) segments
+            in
+            if crossings mod 2 = 1 || List.mem (x, y) pairs || on then
               Graphics.rgb 255 255 255
             else rgb)
           row)
