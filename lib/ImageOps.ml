@@ -147,3 +147,18 @@ let shrink (data : int array array) : int array array =
     done;
     data'
   with _ -> failwith "Out of bounds"
+
+
+let replace_color (data : int array array) 
+  ((src_r, src_g, src_b) : int * int * int)
+  ((dst_r, dst_g, dst_b) : int * int * int) : int array array =
+  Array.map
+    (fun row ->
+      Array.map
+        (fun pixel ->
+          if r pixel = src_r && g pixel = src_g && b pixel = src_b then
+            Graphics.rgb dst_r dst_g dst_b
+          else
+            pixel)
+        row)
+    data
