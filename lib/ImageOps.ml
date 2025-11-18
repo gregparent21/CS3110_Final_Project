@@ -98,3 +98,7 @@ let cut_advanced data (pairs : (int * int) list) =
           row)
       data
   with _ -> raise (Failure "cut_advanced: invalid coordinates")
+
+let shrink data =
+  try
+  let data' = Array.make ((Array.length data) / 3) (Array.make (Array.length data.(0)) / 3 )

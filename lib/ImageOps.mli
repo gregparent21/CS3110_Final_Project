@@ -25,3 +25,7 @@ val cut_advanced : int array array -> (int * int) list -> int array array
 (** [cut_advanced img lst] removes the polygon defined by the line segments
     between each two conseuctive pairs of integers (wrapping the last pair to
     the first). *)
+
+val shrink : int array array -> int array array
+(**[shrink] "compresses" a given image by reducing its total pixel count and
+   averaging the RGB values of neighboring pixels.*)

@@ -7,8 +7,8 @@ let graphics_image_of_file (path : string) : Graphics.image * int * int =
   Printf.eprintf "Loading image from: %s\n%!" path;
   let raw = Images.load path [] in
 
-  (**[cmyk_pixel_to_rgb px] converts [px] of color
-   formatting cmyk to rgb24 for use in Graphics library functions  *)
+  (**[cmyk_pixel_to_rgb px] converts `px` of color formatting cmyk to rgb24 for 
+  use in Graphics library functions.*)
   let cmyk_pixel_to_rgb (px : Color.cmyk) : Color.rgb =
     (* normalize 0–255 integers to floats 0–1 *)
     let c = float_of_int px.Color.c /. 255.0
