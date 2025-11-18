@@ -59,11 +59,11 @@ let tests =
            in
            let expected =
              [|
+               [| 0; white; white; white; white |];
+               [| 0; white; white; white; white |];
+               [| 0; white; white; white; white |];
+               [| 0; white; white; white; white |];
                [| 0; 0; 0; 0; 0 |];
-               [| 0; white; white; white; white |];
-               [| 0; white; white; white; white |];
-               [| 0; white; white; white; white |];
-               [| 0; white; white; white; white |];
              |]
            in
            assert_equal expected result;
@@ -102,7 +102,7 @@ let tests =
            let expected =
              Array.init 100 (fun y ->
                  Array.init 100 (fun x ->
-                     if 20 <= x && x <= 80 && 20 <= y && y <= 80 then white
+                     if 20 <= x && x <= 80 && 19 <= y && y <= 79 then white
                      else 0))
            in
            assert_equal expected result;
@@ -111,11 +111,11 @@ let tests =
            in
            let expected =
              [|
+               [| 0; 0; white; 0; 0 |];
+               [| 0; 0; white; 0; 0 |];
+               [| 0; white; white; white; 0 |];
+               [| 0; white; white; white; 0 |];
                [| white; white; white; white; white |];
-               [| 0; white; white; white; 0 |];
-               [| 0; white; white; white; 0 |];
-               [| 0; 0; white; 0; 0 |];
-               [| 0; 0; white; 0; 0 |];
              |]
            in
            assert_equal expected result;
@@ -125,13 +125,13 @@ let tests =
            in
            let expected =
              [|
+               [| 0; 0; 0; 0; 0; 0; 0 |];
+               [| 0; 0; 0; white; 0; 0; 0 |];
                [| 0; 0; white; white; white; 0; 0 |];
                [| 0; white; white; white; white; white; 0 |];
                [| white; white; white; white; white; white; white |];
                [| 0; white; white; white; white; white; 0 |];
                [| 0; 0; white; white; white; 0; 0 |];
-               [| 0; 0; 0; white; 0; 0; 0 |];
-               [| 0; 0; 0; 0; 0; 0; 0 |];
              |]
            in
            assert_equal expected result );

@@ -82,8 +82,10 @@ let cut_advanced data (pairs : (int * int) list) =
         (fun i pair -> (pair, List.nth pairs ((i + 1) mod List.length pairs)))
         pairs
     in
+    let height = Array.length data in
     Array.mapi
-      (fun y row ->
+      (fun temp row ->
+        let y = height - temp - 1 in
         Array.mapi
           (fun x rgb ->
             let crossings =

@@ -130,7 +130,7 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
   (* Draw Cut button *)
   draw_button toolbar_x button_y button_w button_h "Cut" (current_tool = "cut");
   moveto (toolbar_x + 5) (button_y + button_h + 5);
-  draw_string "Click to select tool";
+  draw_string "Click to select cut tool";
 
   let button_compress_y = win_h - 120 in
   draw_button toolbar_x button_compress_y button_w button_h "Compress" (
@@ -173,9 +173,9 @@ let handle_interactive_cut img_x img_y w h img_data toolbar_x =
       )
     else if key_pressed () then
       let key = read_key () in
-      if key = 'c' && current_tool = "cut" && List.length !clicked_points >= 2 then (
+      if key = 'c' && current_tool = "cut" && List.length !clicked_points > 2 then (
         (* Apply cut *)
-        let cut_data = cut_advanced img_data (List.rev !clicked_points) in
+        let cut_data = cut_advanced img_data (!clicked_points) in
         Printf.printf "Cut applied with %d points!\n" (List.length !clicked_points);
         flush stdout;
         
@@ -262,12 +262,7 @@ let () =
   draw_image img img_x img_y;
 
   (* Convert image to pixel array for cut operations *)
-  let data = Array.make_matrix h w 0 in
-  for y = 0 to h - 1 do
-    for x = 0 to w - 1 do
-      data.(y).(x) <- point_color x y
-    done
-  done;
+  let data = Graphics.dump_image img in
 
   draw_axes img_x img_y w h;
   draw_toolbar win_w win_h toolbar_x "";
