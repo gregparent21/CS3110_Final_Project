@@ -133,10 +133,10 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
 
   (*Draw Compress button *)
   let button_compress_y = win_h - 120 in
-  draw_button toolbar_x button_compress_y button_w button_h "Compress"
-    (current_tool = "compress");
+  draw_button toolbar_x button_compress_y button_w button_h "shrink"
+    (current_tool = "shrink");
   moveto (toolbar_x + 5) (button_y + button_h - 60);
-  draw_string "Click to compress image"
+  draw_string "Click to shrink image"
 
 (**[handle_buttons] allows the user to interact with buttons and alter an image
    accordingly.*)
@@ -166,10 +166,18 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           is_point_in_rect screen_x screen_y toolbar_x compress_y button_width
             button_height
         then (
-          Printf.printf "Compress tool selected! Compressing image.\n";
+          Printf.printf "Shrink tool selected! Shrinking image.\n";
           flush stdout;
+          img_data := shrink !img_data 2;
+          let new_img = Graphics.make_image (shrink !img_data 2) in
+          clear_graph ();
+          draw_image new_img (Array.length !img_data)
+            (Array.length !img_data.(0));
+          draw_axes (Array.length !img_data) (Array.length !img_data.(0)) w h;
+          draw_toolbar (size_x ()) (size_y ()) toolbar_x current_tool;
+          synchronize ();
           Unix.sleepf 0.2;
-          event_loop "compress")
+          event_loop "shrink")
         else (
           Unix.sleepf 0.2;
           event_loop current_tool)
@@ -194,7 +202,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
       if key = 'c' && current_tool = "cut" && List.length !clicked_points > 2
       then (
         (* Apply cut *)
-        let cut_data = cut_advanced img_data !clicked_points in
+        let cut_data = cut_advanced !img_data !clicked_points in
         Printf.printf "Cut applied with %d points!\n"
           (List.length !clicked_points);
         flush stdout;
@@ -278,7 +286,7 @@ let () =
   draw_image img img_x img_y;
 
   (* Convert image to pixel array for cut operations *)
-  let data = Graphics.dump_image img in
+  let data = ref (Graphics.dump_image img) in
 
   draw_axes img_x img_y w h;
   draw_toolbar win_w win_h toolbar_x "";

@@ -122,11 +122,12 @@ let average_neighbors (data : int array array) (factor : int) (x : int)
     let avg_r = ref 0 in
     let avg_g = ref 0 in
     let avg_b = ref 0 in
-    for i = x to x + factor - 1 do
-      for j = y to y + factor - 1 do
-        avg_r := !avg_r + r data.(i).(j);
-        avg_g := !avg_g + g data.(i).(j);
-        avg_b := !avg_b + b data.(i).(j)
+    for i = 0 to factor - 1 do
+      for j = 0 to factor - 1 do
+        let p = data.(x + i).(y + j) in
+        avg_r := !avg_r + r p;
+        avg_g := !avg_g + g p;
+        avg_b := !avg_b + b p
       done
     done;
     avg_r := !avg_r / (factor * factor);
