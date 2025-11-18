@@ -99,6 +99,46 @@ let cut_advanced data (pairs : (int * int) list) =
       data
   with _ -> raise (Failure "cut_advanced: invalid coordinates")
 
-let shrink data =
+(**[r] takes a pixel point and returns that pixel's red value (0-255).*)
+let r p = (p lsr 16) land 0xFF
+
+(**[g] takes a pixel point and returns that pixel's red value (0-255).*)
+let g p = (p lsr 8) land 0xFF
+
+(**[b] takes a pixel point and returns that pixel's red value (0-255).*)
+let b p = p land 0xFF
+
+(**[average_neighbors] takes a data matrix of RGB values and averages squares of
+   pixels of size (factor * factor) into 1 averaged pixel. Returns the averaged
+   RGB value.*)
+let average_neighbors (data : int array array) (factor : int) (x : int)
+    (y : int) =
   try
-  let data' = Array.make ((Array.length data) / 3) (Array.make (Array.length data.(0)) / 3 )
+    let avg_r = ref 0 in
+    let avg_g = ref 0 in
+    let avg_b = ref 0 in
+    for i = x to x + factor - 1 do
+      for j = y to y + factor - 1 do
+        avg_r := !avg_r + r data.(i).(j);
+        avg_g := !avg_g + g data.(i).(j);
+        avg_b := !avg_b + b data.(i).(j)
+      done
+    done;
+    avg_r := !avg_r / (factor * factor);
+    avg_g := !avg_g / (factor * factor);
+    avg_b := !avg_b / (factor * factor);
+    (!avg_r lsl 16) lor (!avg_g lsl 8) lor !avg_b
+  with _ -> failwith "Out of bounds"
+
+let shrink (data : int array array) : int array array =
+  try
+    let data' =
+      Array.make_matrix (Array.length data / 3) (Array.length data.(0) / 3) 0
+    in
+    for x = 0 to (Array.length data / 3) - 1 do
+      for y = 0 to (Array.length data.(0) / 3) - 1 do
+        data'.(x).(y) <- average_neighbors data 3 (x * 3) (y * 3)
+      done
+    done;
+    data'
+  with _ -> failwith "Out of bounds"

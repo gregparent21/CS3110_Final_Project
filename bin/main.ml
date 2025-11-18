@@ -1,14 +1,14 @@
 open Graphics
 open FinalProject.ImageOps
 
-(**[graphics_image_of_file path] is a tuple of a Graphics.image and its width 
-and height of given image of file path [path] *)
+(**[graphics_image_of_file path] is a tuple of a Graphics.image and its width
+   and height of given image of file path [path] *)
 let graphics_image_of_file (path : string) : Graphics.image * int * int =
   Printf.eprintf "Loading image from: %s\n%!" path;
   let raw = Images.load path [] in
 
-  (**[cmyk_pixel_to_rgb px] converts `px` of color formatting cmyk to rgb24 for 
-  use in Graphics library functions.*)
+  (*[cmyk_pixel_to_rgb] converts `px` of color formatting cmyk to rgb24 for use
+    in Graphics library functions.*)
   let cmyk_pixel_to_rgb (px : Color.cmyk) : Color.rgb =
     (* normalize 0–255 integers to floats 0–1 *)
     let c = float_of_int px.Color.c /. 255.0
@@ -19,11 +19,9 @@ let graphics_image_of_file (path : string) : Graphics.image * int * int =
     let conv comp ink = int_of_float (255.0 *. (1.0 -. comp) *. (1.0 -. ink)) in
     { Color.r = conv c k; Color.g = conv m k; Color.b = conv y k }
   in
-
-
   (* Graphics library only works with rgb24 image types. We have to convert
      whatever file we loaded to Rgb24.t *)
-  let rgb = 
+  let rgb =
     match raw with
     | Images.Rgb24 img ->
         Printf.printf "Detected format: Rgb24\n%!";
@@ -47,7 +45,7 @@ let graphics_image_of_file (path : string) : Graphics.image * int * int =
             Rgb24.set out xx yy (cmyk_pixel_to_rgb px)
           done
         done;
-        out 
+        out
   in
 
   let w = rgb.Rgb24.width in
@@ -63,8 +61,8 @@ let graphics_image_of_file (path : string) : Graphics.image * int * int =
 
   (Graphics.make_image data, w, h)
 
-  (** [usage ()] outputs the intended command line command format to run the 
-  program as intended *)
+(** [usage ()] outputs the intended command line command format to run the
+    program as intended *)
 let usage () =
   prerr_endline "Usage: image_viewer <image_path>";
   exit 1
@@ -73,9 +71,9 @@ let usage () =
 let draw_axes img_x img_y w h =
   set_color black;
   moveto img_x img_y;
-  lineto (img_x + w) img_y; 
+  lineto (img_x + w) img_y;
   moveto img_x img_y;
-  lineto img_x (img_y + h); 
+  lineto img_x (img_y + h);
 
   let tick_spacing = 50 in
   let tick_len = 6 in
@@ -102,83 +100,88 @@ let draw_axes img_x img_y w h =
     draw_string (string_of_int j)
   done
 
-(** [draw_button x y w h label selected] draws a button with text. 
-    Fills with light gray if selected, white otherwise. *)
+(** [draw_button x y w h label selected] draws a button with text. Fills with
+    light gray if selected, white otherwise. *)
 let draw_button x y w h label selected =
   if selected then set_color (rgb 200 200 200) else set_color white;
   fill_rect x y w h;
   set_color black;
   draw_rect x y w h;
-  moveto (x + 5) (y + h / 2 - 4);
+  moveto (x + 5) (y + (h / 2) - 4);
   draw_string label
 
 (** [is_point_in_rect px py x y w h] checks if point (px, py) is inside rect *)
 let is_point_in_rect px py x y w h =
   px >= x && px <= x + w && py >= y && py <= y + h
 
-(** [draw_toolbar win_w win_h toolbar_x current_tool] draws tool buttons on the right side *)
+(** [draw_toolbar win_w win_h toolbar_x current_tool] draws tool buttons on the
+    right side *)
 let draw_toolbar win_w win_h toolbar_x current_tool =
   set_color (rgb 220 220 220);
   fill_rect toolbar_x 0 (win_w - toolbar_x) win_h;
   set_color black;
   draw_rect toolbar_x 0 (win_w - toolbar_x) win_h;
-  
+
   let button_y = win_h - 60 in
   let button_w = 90 in
   let button_h = 40 in
-  
+
   (* Draw Cut button *)
   draw_button toolbar_x button_y button_w button_h "Cut" (current_tool = "cut");
   moveto (toolbar_x + 5) (button_y + button_h + 5);
   draw_string "Click to select tool";
 
   let button_compress_y = win_h - 120 in
-  draw_button toolbar_x button_compress_y button_w button_h "Compress" (
-    current_tool = "compress");
+  draw_button toolbar_x button_compress_y button_w button_h "Compress"
+    (current_tool = "compress");
   moveto (toolbar_x + 5) (button_y + button_h - 60);
   draw_string "Click to compress image"
 
-(** [handle_interactive_cut img_x img_y w h img_data toolbar_x] 
-    collects polygon points and applies cut_advanced *)
+(** [handle_interactive_cut img_x img_y w h img_data toolbar_x] collects polygon
+    points and applies cut_advanced *)
 let handle_interactive_cut img_x img_y w h img_data toolbar_x =
   let clicked_points = ref [] in
   let rec cut_loop current_tool =
     if button_down () then
       let screen_x, screen_y = mouse_pos () in
       (* Check if clicked on toolbar *)
-      if screen_x >= toolbar_x then (
+      if screen_x >= toolbar_x then
         if screen_y >= size_y () - 60 && screen_y <= size_y () - 20 then (
-          Printf.printf "Cut tool selected! Click on image to set points. Press 'c' to apply cut, 'r' to reset.\n";
+          Printf.printf
+            "Cut tool selected! Click on image to set points. Press 'c' to \
+             apply cut, 'r' to reset.\n";
           flush stdout;
           Unix.sleepf 0.2;
-          cut_loop "cut"
-        ) else (
+          cut_loop "cut")
+        else (
           Unix.sleepf 0.2;
-          cut_loop current_tool
-        )
-      ) else (
+          cut_loop current_tool)
+      else
         (* Click on image *)
-        let img_px, img_py = screen_to_image_coords screen_x screen_y img_x img_y in
+        let img_px, img_py =
+          screen_to_image_coords screen_x screen_y img_x img_y
+        in
         if current_tool = "cut" && is_within_bounds img_px img_py w h then (
           clicked_points := (img_px, img_py) :: !clicked_points;
-          Printf.printf "Point added: (%d, %d). Total: %d\n" img_px img_py (List.length !clicked_points);
+          Printf.printf "Point added: (%d, %d). Total: %d\n" img_px img_py
+            (List.length !clicked_points);
           flush stdout;
           Unix.sleepf 0.2;
-          cut_loop current_tool
-        ) else (
+          cut_loop current_tool)
+        else (
           Printf.printf "No tool selected or click outside bounds\n";
           Unix.sleepf 0.2;
-          cut_loop current_tool
-        )
-      )
+          cut_loop current_tool)
     else if key_pressed () then
       let key = read_key () in
-      if key = 'c' && current_tool = "cut" && List.length !clicked_points >= 2 then (
+      if key = 'c' && current_tool = "cut" && List.length !clicked_points >= 2
+      then (
         (* Apply cut *)
         let cut_data = cut_advanced img_data (List.rev !clicked_points) in
-        Printf.printf "Cut applied with %d points!\n" (List.length !clicked_points);
+        Printf.printf "Cut applied with %d points!\n"
+          (List.length !clicked_points);
         flush stdout;
-        
+
         (* Redraw *)
         let new_img = Graphics.make_image cut_data in
         clear_graph ();
@@ -186,45 +189,41 @@ let handle_interactive_cut img_x img_y w h img_data toolbar_x =
         draw_axes img_x img_y w h;
         draw_toolbar (size_x ()) (size_y ()) toolbar_x current_tool;
         synchronize ();
-        
+
         (* Reset and continue *)
         clicked_points := [];
         Printf.printf "Points reset. Select a tool and continue.\n";
         flush stdout;
-        cut_loop ""
-      ) else if key = 'r' then (
+        cut_loop "")
+      else if key = 'r' then (
         clicked_points := [];
         Printf.printf "Points reset.\n";
         flush stdout;
-        cut_loop current_tool
-      ) else if key = 'q' then
-        Printf.printf "Exiting.\n"
-      else (
-        cut_loop current_tool
-      )
+        cut_loop current_tool)
+      else if key = 'q' then Printf.printf "Exiting.\n"
+      else cut_loop current_tool
     else (
       Unix.sleepf 0.01;
-      cut_loop current_tool
-    )
+      cut_loop current_tool)
   in
   cut_loop ""
 
-(** [handle_click img_x img_y w h] waits for mouse clicks and prints the 
+(** [handle_click img_x img_y w h] waits for mouse clicks and prints the
     image-local coordinates of clicked pixels *)
 let handle_click img_x img_y w h =
   let rec click_loop () =
-    if button_down () then
+    if button_down () then (
       let screen_x, screen_y = mouse_pos () in
-      let img_px, img_py = screen_to_image_coords screen_x screen_y img_x img_y in
+      let img_px, img_py =
+        screen_to_image_coords screen_x screen_y img_x img_y
+      in
       if is_within_bounds img_px img_py w h then (
         Printf.printf "Clicked at image coordinates: (%d, %d)\n" img_px img_py;
-        flush stdout
-      ) else
-        Printf.printf "Click outside image bounds\n";
-      Unix.sleepf 0.2; 
-      click_loop ()
-    else if key_pressed () then
-      ignore (read_key ())
+        flush stdout)
+      else Printf.printf "Click outside image bounds\n";
+      Unix.sleepf 0.2;
+      click_loop ())
+    else if key_pressed () then ignore (read_key ())
     else (
       Unix.sleepf 0.01;
       click_loop ())
@@ -255,7 +254,7 @@ let () =
   let win_w = size_x () in
   let win_h = size_y () in
   let toolbar_x = 650 in
-  
+
   clear_graph ();
   let img_x = (toolbar_x - w) / 2 in
   let img_y = (win_h - h) / 2 in
@@ -273,7 +272,9 @@ let () =
   draw_toolbar win_w win_h toolbar_x "";
   synchronize ();
 
-  Printf.printf "Click the 'Cut' button to select the cut tool, then click on image to set polygon points.\n";
+  Printf.printf
+    "Click the 'Cut' button to select the cut tool, then click on image to set \
+     polygon points.\n";
   Printf.printf "Press 'c' to apply cut, 'r' to reset points, 'q' to quit.\n";
   flush stdout;
 
