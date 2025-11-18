@@ -45,6 +45,35 @@ let tests =
            assert_equal false (intersects_segment (15, 15) (0, 0) (10, 10));
            assert_equal false (intersects_segment (5, 15) (0, 0) (10, 10));
            assert_equal false (intersects_segment (10, 5) (0, 0) (10, 10)) );
+         ( "Test cut_advanced" >:: fun _ ->
+           let polygon = [ (1, 1); (4, 1); (4, 4); (1, 4) ] in
+           let result =
+             cut_advanced
+               [|
+                 [| 0; 0; 0; 0; 0 |];
+                 [| 0; 12; 34; 56; 0 |];
+                 [| 0; 78; 90; 100; 0 |];
+                 [| 0; 110; 120; 130; 0 |];
+                 [| 0; 0; 0; 0; 0 |];
+               |]
+               polygon
+           in
+           print_endline "Result:";
+           Array.iter
+             (fun row ->
+               Array.iter (fun pixel -> Printf.printf "%d " pixel) row;
+               print_newline ())
+             result;
+           let expected =
+             [|
+               [| 0; 0; 0; 0; 0 |];
+               [| 0; white; white; white; white |];
+               [| 0; white; white; white; white |];
+               [| 0; white; white; white; white |];
+               [| 0; white; white; white; white |];
+             |]
+           in
+           assert_equal expected result );
        ]
 
 let _ = run_test_tt_main tests
