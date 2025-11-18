@@ -11,8 +11,8 @@ GenAI Usage:
 - Julian: When doing the image shrinking algorithm, I was unsure how to extract RGB values from the Graphics.image type.
 
 
-Currently to run on Mac (from what I've seen online you don't need the first 2 commands on windows, we are essentially emulating a windows environment): 
-- Must opam install everything in requirements.txt (also install Xquartz on mac)
+Currently to run on Mac run all the commands below. For Windows devices, you do not need to install or run XQuartz (This is because Xquartz is required to essentially emulate a windows environment): 
+- Must opam install everything in requirements.txt. Note, you must be in OCaml version 4.14.2 for the packages to properly install. (also install Xquartz on mac)
 - Run [open -a XQuartz] (only for mac users)
 - Run [echo $DISPLAY=:0]
 - Run [dune exec bin/main.exe data/Homer_Simpson.png]
