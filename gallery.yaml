@@ -23,14 +23,10 @@ title: "CamlShop"
 # OK if this is a Cornell Github link, but public gallery viewers won't be able to see it.
 git-repo: "https://github.com/gregparent21/CS3110_Final_Project"
 # Replace the URL with your own demo video.
-demo-video-url: "https://www.youtube.com/watch?v=eSBybJGZoCU"
+demo-video-url: "https://youtu.be/9JfDWLyX338"
 # Write a short, attention-grabbing description of your project.
 desc: >
-  Our project is an interactive calculator. It supports standard mathematical
-  operations like addition, multiplication, negation, and division on both
-  integers and floating-point numbers. The interface is completely
-  programmable--new functions can easily be defined and assigned to new "keys"
-  in the visual interface.
-
-  Standard visual I/O is supported, but the calculator can also emit sound. By
-  pressing down a special key, it can play a fugue by J.S. Bach.
+  Our project is an OCaml version of photoshop. We implement basic functionalities 
+  from photoshop such as cutting, changing colors, or resizing images. We aim to be 
+  able to import images, change them using these photoshop tools and save it once 
+  done.
