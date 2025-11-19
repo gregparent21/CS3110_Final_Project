@@ -185,7 +185,38 @@ let flip_horizontal (img : int array array) : int array array =
   else
     let width = Array.length img.(0) in
     Array.init height (fun y ->
-      Array.init width (fun x ->
-        img.(y).(width - 1 - x)
-      ))
-    
+        Array.init width (fun x -> img.(y).(width - 1 - x)))
+
+let crop (data : int array array) ((x1, y1) : int * int) ((x2, y2) : int * int)
+    : int array array =
+  try
+    let x_min = min x1 x2 in
+    let x_max = max x1 x2 in
+    let y_min = min y1 y2 in
+    let y_max = max y1 y2 in
+
+    let height = Array.length data in
+    let width = Array.length data.(0) in
+
+    if
+      x_min < 0 || y_min < 0 || x_max >= width || y_max >= height
+      || x_min > x_max || y_min > y_max
+    then failwith "crop: coordinates out of bounds"
+    else
+      let new_h = y_max - y_min + 1 in
+      let new_w = x_max - x_min + 1 in
+      let result = Array.make_matrix new_h new_w 0 in
+      for j = 0 to new_h - 1 do
+        for i = 0 to new_w - 1 do
+          result.(j).(i) <- data.(y_min + j).(x_min + i)
+        done
+      done;
+      result
+  with _ -> failwith "crop: invalid coordinates"
+
+let array_sub (a : int array array) (b : int array array) : int array array =
+  try
+    Array.mapi
+      (fun j row -> Array.mapi (fun i pixel -> pixel - b.(j).(i)) row)
+      a
+  with _ -> raise (Failure "Array Subtraction Error!")

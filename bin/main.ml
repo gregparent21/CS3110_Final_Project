@@ -157,7 +157,14 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
   draw_button toolbar_x button_mirror_y button_w button_h "mirror"
     (current_tool = "mirror");
   moveto (toolbar_x + 5) (button_mirror_y + button_h + 5);
-  draw_string "Click to mirror image"
+  draw_string "Click to mirror image";
+
+  (* Draw Crop *)
+  let button_crop_y = win_h - 360 in
+  draw_button toolbar_x button_crop_y button_w button_h "Crop"
+    (current_tool = "crop");
+  moveto (toolbar_x + 5) (button_crop_y + button_h + 5);
+  draw_string "Click to crop"
 
 (* Draw Rotate *)
 
@@ -174,6 +181,8 @@ let redraw img img_x img_y w h toolbar_x current_tool =
    accordingly.*)
 let handle_buttons img_x img_y w h img_data toolbar_x =
   let clicked_points = ref [] in
+
+  let crop_points = ref [] in
   (*These lengths defined below are from [draw_toolbar]. Must accurately reflect
     any of the pre-defined values.*)
   let button_width = 90 in
@@ -182,16 +191,10 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
   let paste_y = size_y () - 120 in
   let compress_y = size_y () - 180 in
   let invert_y = size_y () - 240 in
+  let crop_y = size_y () - 360 in
   let prev_cut = ref (Array.make_matrix 0 0 0) in
   (* Assumes that [a1] and [a2] are equal in dimension. Gives [a1] - [a2]
      elementwise. *)
-  let ( - ) (a1 : color array array) (a2 : color array array) =
-    try
-      Array.mapi
-        (fun j row -> Array.mapi (fun i pixel -> pixel - a2.(j).(i)) row)
-        a1
-    with _ -> raise (Failure "Array Subtraction Error!")
-  in
   let rec event_loop current_tool =
     let screen_x, screen_y = mouse_pos () in
     if button_down () then
@@ -248,6 +251,15 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           redraw new_img img_x img_y w h toolbar_x "invert";
           Unix.sleepf 0.2;
           event_loop "invert")
+        else if
+          is_point_in_rect screen_x screen_y toolbar_x crop_y button_width
+            button_height
+        then (
+          crop_points := [];
+          Printf.printf "Crop tool selected! Click two corners.\n";
+          flush stdout;
+          Unix.sleepf 0.2;
+          event_loop "crop")
         else (
           Unix.sleepf 0.2;
           event_loop current_tool)
@@ -268,6 +280,50 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           flush stdout;
           Unix.sleepf 0.2;
           event_loop current_tool)
+        else if current_tool = "crop" && is_within_bounds img_px img_py w h then (
+          (* CROP MODE: collect two corners, then apply crop *)
+          crop_points := (img_px, img_py) :: !crop_points;
+          Printf.printf "Crop corner: (%d, %d). Total: %d/2\n" img_px img_py
+            (List.length !crop_points);
+          flush stdout;
+
+          if List.length !crop_points = 2 then (
+            (* Take the two points *)
+            let p1, p2 =
+              match !crop_points with
+              | [ a; b ] -> (a, b)
+              | _ -> failwith "impossible crop_points length"
+            in
+
+            (* Apply crop to pixel data *)
+            img_data := crop !img_data p1 p2;
+
+            let new_h = Array.length !img_data in
+            let new_w = Array.length !img_data.(0) in
+            let new_img = Graphics.make_image !img_data in
+
+            (* Re-center image in left area *)
+            let win_w = size_x () in
+            let win_h = size_y () in
+            let toolbar_x = 650 in
+            let img_x' = (toolbar_x - new_w) / 2 in
+            let img_y' = (win_h - new_h) / 2 in
+
+            clear_graph ();
+            draw_image new_img img_x' img_y';
+            draw_axes img_x' img_y' new_w new_h;
+            draw_toolbar win_w win_h toolbar_x "crop";
+            synchronize ();
+
+            crop_points := [];
+            Printf.printf "Crop applied.\n";
+            flush stdout;
+
+            (* Leave crop mode after applying *)
+            event_loop "")
+          else (
+            Unix.sleepf 0.2;
+            event_loop current_tool))
         else (
           Printf.printf "No tool selected or click outside bounds\n";
           Unix.sleepf 0.2;
@@ -289,7 +345,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           (List.hd !clicked_points, List.hd (List.tl !clicked_points))
         in
         let cut_data = cut_square !img_data a b in
-        prev_cut := !img_data - cut_data;
+        prev_cut := array_sub !img_data cut_data;
         img_data := cut_data;
         Printf.printf "Cut square applied with points: (%d, %d) and (%d, %d)\n"
           (fst a) (snd a) (fst b) (snd b);
@@ -310,7 +366,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
         && List.length !clicked_points > 2
       then (
         let cut_data = cut_advanced !img_data (List.rev !clicked_points) in
-        prev_cut := !img_data - cut_data;
+        prev_cut := array_sub !img_data cut_data;
         img_data := cut_data;
         Printf.printf "Advanced cut applied with points:\n";
         List.iter

@@ -46,6 +46,13 @@ val invert_colors : int array array -> int array array
     values are inverted: (r, g, b) becomes (255 - r, 255 - g, 255 - b). *)
 
 val flip_horizontal : int array array -> int array array
-(** [flip_horizontal img] returns a new image that is a horizontal mirror of [img]. *)
+(** [flip_horizontal img] returns a new image that is a horizontal mirror of
+    [img]. *)
 
-    
+val crop : int array array -> int * int -> int * int -> int array array
+(** [crop data (x1, y1) (x2, y2)] returns a new pixel matrix consisting only of
+    the rectangular region between [(x1, y1)] and [(x2, y2)], inclusive. *)
+
+val array_sub : int array array -> int array array -> int array array
+(** [array_sub A B] returns A-B elementwise. Requires that [A] and [B] are the
+    same size. *)
