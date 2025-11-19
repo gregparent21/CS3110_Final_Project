@@ -47,4 +47,5 @@ val invert_colors : int array array -> int array array
 
 val flip_horizontal : int array array -> int array array
 (** [flip_horizontal img] returns a new image that is a horizontal mirror of [img]. *)
+
     
