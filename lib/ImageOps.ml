@@ -10,6 +10,18 @@ let standard_coordinates ((a, b) : int * int) ((x, y) : int * int) =
   else if a > x && b > y then ((x, y), (a, b))
   else ((a, b), (x, y))
 
+let%test "standard_coordinates" =
+  standard_coordinates (1, 4) (4, 1) = ((1, 1), (4, 4))
+
+let%test "standard_coordinates 2" =
+  standard_coordinates (4, 1) (1, 4) = ((1, 1), (4, 4))
+
+let%test "standard_coordinates 3" =
+  standard_coordinates (1, 1) (4, 4) = ((1, 1), (4, 4))
+
+let%test "standard_coordinates 4" =
+  standard_coordinates (4, 4) (1, 1) = ((1, 1), (4, 4))
+
 let cut_square (data : int array array) ((start_x, start_y) : int * int)
     ((end_x, end_y) : int * int) =
   try
