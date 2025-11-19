@@ -178,3 +178,13 @@ let invert_colors (data : int array array) : int array array =
           Graphics.rgb ir ig ib)
         row)
     data
+
+let flip_horizontal (img : int array array) : int array array =
+  let height = Array.length img in
+  if height = 0 then img
+    else
+      let width = Array.length img.(0) in
+        Array.init height (fun y ->
+          Array.init width (fun x ->img.(y).(width - 1 - x)
+        ))
+    

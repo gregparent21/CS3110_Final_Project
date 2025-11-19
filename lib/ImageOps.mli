@@ -44,3 +44,7 @@ val replace_color :
 val invert_colors : int array array -> int array array
 (** [invert_colors data] returns a new pixel matrix where each pixel's RGB
     values are inverted: (r, g, b) becomes (255 - r, 255 - g, 255 - b). *)
+
+val flip_horizontal : int array array -> int array array
+(** [flip_horizontal img] returns a new image that is a horizontal mirror of [img]. *)
+    
