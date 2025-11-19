@@ -1,4 +1,8 @@
 (library
+ (instrumentation (backend bisect_ppx))
  (name FinalProject)
  (modules ImageOps)
- (libraries graphics))
+ (libraries graphics )
+ (inline_tests)
+ (preprocess (pps ppx_inline_test bisect_ppx))
+ )

@@ -10,6 +10,18 @@ let standard_coordinates ((a, b) : int * int) ((x, y) : int * int) =
   else if a > x && b > y then ((x, y), (a, b))
   else ((a, b), (x, y))
 
+let%test "standard_coordinates" =
+  standard_coordinates (1, 4) (4, 1) = ((1, 1), (4, 4))
+
+let%test "standard_coordinates 2" =
+  standard_coordinates (4, 1) (1, 4) = ((1, 1), (4, 4))
+
+let%test "standard_coordinates 3" =
+  standard_coordinates (1, 1) (4, 4) = ((1, 1), (4, 4))
+
+let%test "standard_coordinates 4" =
+  standard_coordinates (4, 4) (1, 1) = ((1, 1), (4, 4))
+
 let cut_square (data : int array array) ((start_x, start_y) : int * int)
     ((end_x, end_y) : int * int) =
   try
@@ -185,7 +197,11 @@ let flip_horizontal (img : int array array) : int array array =
   else
     let width = Array.length img.(0) in
     Array.init height (fun y ->
-      Array.init width (fun x ->
-        img.(y).(width - 1 - x)
-      ))
-    
+        Array.init width (fun x -> img.(y).(width - 1 - x)))
+
+let array_sub (a : int array array) (b : int array array) : int array array =
+  try
+    Array.mapi
+      (fun j row -> Array.mapi (fun i pixel -> pixel - b.(j).(i)) row)
+      a
+  with _ -> raise (Failure "Array Subtraction Error!")

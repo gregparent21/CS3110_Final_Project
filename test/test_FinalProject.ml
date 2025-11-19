@@ -20,7 +20,7 @@ let tests =
            in
            let expected =
              [|
-               [| 0; 12; 34 |]; [| 42; white; white |]; [| 78; white; white |];
+               [| 0; white; white |]; [| 42; white; white |]; [| 78; 90; 100 |];
              |]
            in
            assert_equal expected result;
@@ -31,7 +31,8 @@ let tests =
              cut_square (Array.make_matrix 1000 1000 0) (500, 500) (600, 600)
            in
            let expected =
-             Array.init 1000 (fun y ->
+             Array.init 1000 (fun temp ->
+                 let y = 1000 - temp - 1 in
                  Array.init 1000 (fun x ->
                      if 500 <= x && x <= 600 && 500 <= y && y <= 600 then white
                      else 0))

@@ -185,13 +185,6 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
   let prev_cut = ref (Array.make_matrix 0 0 0) in
   (* Assumes that [a1] and [a2] are equal in dimension. Gives [a1] - [a2]
      elementwise. *)
-  let ( - ) (a1 : color array array) (a2 : color array array) =
-    try
-      Array.mapi
-        (fun j row -> Array.mapi (fun i pixel -> pixel - a2.(j).(i)) row)
-        a1
-    with _ -> raise (Failure "Array Subtraction Error!")
-  in
   let rec event_loop current_tool =
     let screen_x, screen_y = mouse_pos () in
     if button_down () then
@@ -289,7 +282,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           (List.hd !clicked_points, List.hd (List.tl !clicked_points))
         in
         let cut_data = cut_square !img_data a b in
-        prev_cut := !img_data - cut_data;
+        prev_cut := array_sub !img_data cut_data;
         img_data := cut_data;
         Printf.printf "Cut square applied with points: (%d, %d) and (%d, %d)\n"
           (fst a) (snd a) (fst b) (snd b);
@@ -310,7 +303,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
         && List.length !clicked_points > 2
       then (
         let cut_data = cut_advanced !img_data (List.rev !clicked_points) in
-        prev_cut := !img_data - cut_data;
+        prev_cut := array_sub !img_data cut_data;
         img_data := cut_data;
         Printf.printf "Advanced cut applied with points:\n";
         List.iter
