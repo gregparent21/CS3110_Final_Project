@@ -167,3 +167,15 @@ let replace_color (data : int array array)
           else pixel)
         row)
     data
+
+let invert_colors (data : int array array) : int array array =
+  Array.map
+    (fun row ->
+      Array.map
+        (fun p ->
+          let ir = 255 - r p in
+          let ig = 255 - g p in
+          let ib = 255 - b p in
+          Graphics.rgb ir ig ib)
+        row)
+    data

@@ -36,3 +36,7 @@ val replace_color :
 (** [replace_color data (src_r, src_g, src_b) (dst_r, dst_g, dst_b)] returns a
     new pixel matrix where every pixel whose RGB components exactly match
     [(src_r, src_g, src_b)] is replaced with [(dst_r, dst_g, dst_b)]. *)
+
+val invert_colors : int array array -> int array array
+(** [invert_colors data] returns a new pixel matrix where each pixel's RGB
+    values are inverted: (r, g, b) becomes (255 - r, 255 - g, 255 - b). *)

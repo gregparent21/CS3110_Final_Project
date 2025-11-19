@@ -136,7 +136,14 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
   draw_button toolbar_x button_compress_y button_w button_h "shrink"
     (current_tool = "shrink");
   moveto (toolbar_x + 5) (button_y + button_h - 60);
-  draw_string "Click to shrink image"
+  draw_string "Click to shrink image";
+
+  (* Draw Invert button *)
+  let button_invert_y = win_h - 180 in
+  draw_button toolbar_x button_invert_y button_w button_h "invert"
+    (current_tool = "invert");
+  moveto (toolbar_x + 5) (button_invert_y + button_h + 5);
+  draw_string "Click to invert colors"
 
 (**[handle_buttons] allows the user to interact with buttons and alter an image
    accordingly.*)
@@ -148,6 +155,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
   let button_height = 40 in
   let cut_y = size_y () - 60 in
   let compress_y = size_y () - 120 in
+  let invert_y = size_y () - 180 in
   let rec event_loop current_tool =
     let screen_x, screen_y = mouse_pos () in
     if button_down () then
@@ -178,6 +186,24 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           synchronize ();
           Unix.sleepf 0.2;
           event_loop "shrink")
+        else if
+          is_point_in_rect screen_x screen_y toolbar_x invert_y button_width
+            button_height
+        then (
+          Printf.printf "Invert tool selected! Inverting colors.\n";
+          flush stdout;
+          (* Apply inversion to the current pixel data *)
+          img_data := invert_colors !img_data;
+          let new_img = Graphics.make_image !img_data in
+
+          (* Redraw window with inverted image *)
+          clear_graph ();
+          draw_image new_img img_x img_y;
+          draw_axes img_x img_y w h;
+          draw_toolbar (size_x ()) (size_y ()) toolbar_x "invert";
+          synchronize ();
+          Unix.sleepf 0.2;
+          event_loop "invert")
         else (
           Unix.sleepf 0.2;
           event_loop current_tool)
