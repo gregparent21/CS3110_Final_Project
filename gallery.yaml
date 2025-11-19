@@ -29,4 +29,5 @@ desc: >
   Our project is an OCaml version of photoshop. We implement basic functionalities 
   from photoshop such as cutting, changing colors, or resizing images. We aim to be 
   able to import images, change them using these photoshop tools and save it once 
-  done.
+  done. Additionally, we aim to improve the UI so the user does not have to refer to 
+  the terminal. 
