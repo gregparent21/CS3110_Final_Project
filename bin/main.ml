@@ -249,6 +249,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           (List.hd !clicked_points, List.hd (List.tl !clicked_points))
         in
         let cut_data = cut_square !img_data a b in
+        img_data := cut_data;
         Printf.printf "Cut square applied with points: (%d, %d) and (%d, %d)\n"
           (fst a) (snd a) (fst b) (snd b);
         flush stdout;
@@ -268,6 +269,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
         && List.length !clicked_points > 2
       then (
         let cut_data = cut_advanced !img_data (List.rev !clicked_points) in
+        img_data := cut_data;
         Printf.printf "Advanced cut applied with points:\n";
         List.iter
           (fun (x, y) -> Printf.printf "(%d, %d)\n" x y)
