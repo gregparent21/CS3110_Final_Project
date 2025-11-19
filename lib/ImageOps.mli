@@ -18,8 +18,7 @@ val intersects_segment : int * int -> int * int -> int * int -> bool
     positive infinity x intersects the line segment from [p2] to [p3]. *)
 
 val cut_square : int array array -> int * int -> int * int -> int array array
-(** [cut_square img x y] removes the square with lower-left endpoint x and
-    upper-right endpoing y from img. *)
+(** [cut_square img x y] removes the square with corners x and y from img. *)
 
 val cut_advanced : int array array -> (int * int) list -> int array array
 (** [cut_advanced img lst] removes the polygon defined by the line segments

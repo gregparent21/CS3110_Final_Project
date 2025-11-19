@@ -4,13 +4,24 @@ let screen_to_image_coords screen_x screen_y img_x img_y =
 let is_within_bounds x y w h = x >= 0 && x < w && y >= 0 && y < h
 let pixel_to_string r g b = Printf.sprintf "RGB(%d, %d, %d)" r g b
 
+let standard_coordinates (a, b) (x, y) =
+  if a < x && b > y then ((a, y), (x, b))
+  else if a > x && b < y then ((x, b), (a, y))
+  else if a > x && b > y then ((x, y), (a, b))
+  else ((a, b), (x, y))
+
 let cut_square data (start_x, start_y) (end_x, end_y) =
   try
+    let (a, b), (u, v) =
+      standard_coordinates (start_x, start_y) (end_x, end_y)
+    in
+    let height = Array.length data in
     Array.mapi
-      (fun y row ->
+      (fun temp row ->
+        let y = height - temp - 1 in
         Array.mapi
           (fun x rgb ->
-            if start_x <= x && x <= end_x && start_y <= y && y <= end_y then
+            if a <= x && x <= u && b <= y && y <= v then
               Graphics.rgb 255 255 255
             else rgb)
           row)

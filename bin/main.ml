@@ -145,6 +145,15 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
   moveto (toolbar_x + 5) (button_invert_y + button_h + 5);
   draw_string "Click to invert colors"
 
+(** [redraw img img_x img_y w h toolbar_x current_tool] is a helper function
+    that redraws the image after applying the cut. *)
+let redraw img img_x img_y w h toolbar_x current_tool =
+  clear_graph ();
+  draw_image img img_x img_y;
+  draw_axes img_x img_y w h;
+  draw_toolbar (size_x ()) (size_y ()) toolbar_x current_tool;
+  synchronize ()
+
 (**[handle_buttons] allows the user to interact with buttons and alter an image
    accordingly.*)
 let handle_buttons img_x img_y w h img_data toolbar_x =
@@ -165,8 +174,9 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             button_height
         then (
           Printf.printf
-            "Cut tool selected! Click on image to set points. Press 'c' to \
-             apply cut, 'r' to reset.\n";
+            "Cut tool selected! Press a to enter advanced cut. Otherwise, \
+             select two opposite corners of the cut area. Then, press 'c' to \
+             cut or 'r' to reset. \n";
           flush stdout;
           Unix.sleepf 0.2;
           event_loop "cut")
@@ -197,11 +207,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           let new_img = Graphics.make_image !img_data in
 
           (* Redraw window with inverted image *)
-          clear_graph ();
-          draw_image new_img img_x img_y;
-          draw_axes img_x img_y w h;
-          draw_toolbar (size_x ()) (size_y ()) toolbar_x "invert";
-          synchronize ();
+          redraw new_img img_x img_y w h toolbar_x "invert";
           Unix.sleepf 0.2;
           event_loop "invert")
         else (
@@ -212,7 +218,10 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
         let img_px, img_py =
           screen_to_image_coords screen_x screen_y img_x img_y
         in
-        if current_tool = "cut" && is_within_bounds img_px img_py w h then (
+        if
+          (current_tool = "cut" || current_tool = "advanced_cut")
+          && is_within_bounds img_px img_py w h
+        then (
           clicked_points := (img_px, img_py) :: !clicked_points;
           Printf.printf "Point added: (%d, %d). Total: %d\n" img_px img_py
             (List.length !clicked_points);
@@ -225,21 +234,48 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           event_loop current_tool)
     else if key_pressed () then
       let key = read_key () in
-      if key = 'c' && current_tool = "cut" && List.length !clicked_points > 2
+      if key = 'a' && current_tool = "cut" then (
+        Printf.printf
+          "Advanced cut mode activated! Select multiple points to define a \
+           polygon. Press 'c' to cut or 'r' to reset.\n";
+        flush stdout;
+        Unix.sleepf 0.01;
+        event_loop "advanced_cut")
+      else if
+        key = 'c' && current_tool = "cut" && List.length !clicked_points = 2
       then (
         (* Apply cut *)
-        let cut_data = cut_advanced !img_data !clicked_points in
-        Printf.printf "Cut applied with %d points!\n"
-          (List.length !clicked_points);
+        let a, b =
+          (List.hd !clicked_points, List.hd (List.tl !clicked_points))
+        in
+        let cut_data = cut_square !img_data a b in
+        Printf.printf "Cut square applied with points: (%d, %d) and (%d, %d)\n"
+          (fst a) (snd a) (fst b) (snd b);
         flush stdout;
 
         (* Redraw *)
         let new_img = Graphics.make_image cut_data in
-        clear_graph ();
-        draw_image new_img img_x img_y;
-        draw_axes img_x img_y w h;
-        draw_toolbar (size_x ()) (size_y ()) toolbar_x current_tool;
-        synchronize ();
+        redraw new_img img_x img_y w h toolbar_x current_tool;
+
+        (* Reset and continue *)
+        clicked_points := [];
+        Printf.printf "Points reset. Select a tool and continue.\n";
+        flush stdout;
+        event_loop "")
+      else if
+        key = 'c'
+        && current_tool = "advanced_cut"
+        && List.length !clicked_points > 2
+      then (
+        let cut_data = cut_advanced !img_data (List.rev !clicked_points) in
+        Printf.printf "Advanced cut applied with points:\n";
+        List.iter
+          (fun (x, y) -> Printf.printf "(%d, %d)\n" x y)
+          (List.rev !clicked_points);
+        flush stdout;
+
+        let new_img = Graphics.make_image cut_data in
+        redraw new_img img_x img_y w h toolbar_x current_tool;
 
         (* Reset and continue *)
         clicked_points := [];
