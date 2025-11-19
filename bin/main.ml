@@ -150,7 +150,16 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
   draw_button toolbar_x button_invert_y button_w button_h "invert"
     (current_tool = "invert");
   moveto (toolbar_x + 5) (button_invert_y + button_h + 5);
-  draw_string "Click to invert colors"
+  draw_string "Click to invert colors";
+
+  (* Draw Mirror *)
+  let button_mirror_y = win_h - 300 in
+  draw_button toolbar_x button_mirror_y button_w button_h "mirror"
+    (current_tool = "mirror");
+  moveto (toolbar_x + 5) (button_mirror_y + button_h + 5);
+  draw_string "Click to mirror image"
+
+(* Draw Rotate *)
 
 (** [redraw img img_x img_y w h toolbar_x current_tool] is a helper function
     that redraws the image after applying the cut. *)
