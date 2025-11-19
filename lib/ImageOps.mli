@@ -25,6 +25,11 @@ val cut_advanced : int array array -> (int * int) list -> int array array
     between each two conseuctive pairs of integers (wrapping the last pair to
     the first). *)
 
+val paste : int array array -> int array array -> int * int -> int array array
+(** [paste base overlay (x, y)] pastes the [overlay] image onto the [base] image
+    with the bottom-left corner of the overlay at position [(x, y)] in the base
+    image. *)
+
 val shrink : int array array -> int -> int array array
 (**[shrink] "compresses" a given image by reducing its total pixel count and
    averaging the RGB values of neighboring pixels. Reduces the size of an image

@@ -131,15 +131,22 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
   moveto (toolbar_x + 5) (button_y + button_h + 5);
   draw_string "Click to select cut tool";
 
+  (* Draw Paste button *)
+  let button_paste_y = win_h - 120 in
+  draw_button toolbar_x button_paste_y button_w button_h "Paste"
+    (current_tool = "paste");
+  moveto (toolbar_x + 5) (button_paste_y + button_h + 5);
+  draw_string "Click to select paste tool";
+
   (*Draw Compress button *)
-  let button_compress_y = win_h - 120 in
+  let button_compress_y = win_h - 180 in
   draw_button toolbar_x button_compress_y button_w button_h "shrink"
     (current_tool = "shrink");
-  moveto (toolbar_x + 5) (button_y + button_h - 60);
+  moveto (toolbar_x + 5) (button_compress_y + button_h + 5);
   draw_string "Click to shrink image";
 
   (* Draw Invert button *)
-  let button_invert_y = win_h - 180 in
+  let button_invert_y = win_h - 240 in
   draw_button toolbar_x button_invert_y button_w button_h "invert"
     (current_tool = "invert");
   moveto (toolbar_x + 5) (button_invert_y + button_h + 5);
@@ -163,8 +170,19 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
   let button_width = 90 in
   let button_height = 40 in
   let cut_y = size_y () - 60 in
-  let compress_y = size_y () - 120 in
-  let invert_y = size_y () - 180 in
+  let paste_y = size_y () - 120 in
+  let compress_y = size_y () - 180 in
+  let invert_y = size_y () - 240 in
+  let prev_cut = ref (Array.make_matrix 0 0 0) in
+  (* Assumes that [a1] and [a2] are equal in dimension. Gives [a1] - [a2]
+     elementwise. *)
+  let ( - ) (a1 : color array array) (a2 : color array array) =
+    try
+      Array.mapi
+        (fun j row -> Array.mapi (fun i pixel -> pixel - a2.(j).(i)) row)
+        a1
+    with _ -> raise (Failure "Array Subtraction Error!")
+  in
   let rec event_loop current_tool =
     let screen_x, screen_y = mouse_pos () in
     if button_down () then
@@ -180,6 +198,17 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           flush stdout;
           Unix.sleepf 0.2;
           event_loop "cut")
+        else if
+          is_point_in_rect screen_x screen_y toolbar_x paste_y button_width
+            button_height
+        then (
+          Printf.printf
+            "Paste tool selected! Select the bottom left endpoint where you \
+             would like to paste the previous cut. Press 'p' to apply the \
+             paste and 'r' to reset. \n";
+          flush stdout;
+          Unix.sleepf 0.2;
+          event_loop "paste")
         else if
           is_point_in_rect screen_x screen_y toolbar_x compress_y button_width
             button_height
@@ -219,7 +248,9 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           screen_to_image_coords screen_x screen_y img_x img_y
         in
         if
-          (current_tool = "cut" || current_tool = "advanced_cut")
+          (current_tool = "cut"
+          || current_tool = "advanced_cut"
+          || current_tool = "paste")
           && is_within_bounds img_px img_py w h
         then (
           clicked_points := (img_px, img_py) :: !clicked_points;
@@ -249,6 +280,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           (List.hd !clicked_points, List.hd (List.tl !clicked_points))
         in
         let cut_data = cut_square !img_data a b in
+        prev_cut := !img_data - cut_data;
         img_data := cut_data;
         Printf.printf "Cut square applied with points: (%d, %d) and (%d, %d)\n"
           (fst a) (snd a) (fst b) (snd b);
@@ -269,6 +301,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
         && List.length !clicked_points > 2
       then (
         let cut_data = cut_advanced !img_data (List.rev !clicked_points) in
+        prev_cut := !img_data - cut_data;
         img_data := cut_data;
         Printf.printf "Advanced cut applied with points:\n";
         List.iter
@@ -277,6 +310,24 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
         flush stdout;
 
         let new_img = Graphics.make_image cut_data in
+        redraw new_img img_x img_y w h toolbar_x current_tool;
+
+        (* Reset and continue *)
+        clicked_points := [];
+        Printf.printf "Points reset. Select a tool and continue.\n";
+        flush stdout;
+        event_loop "")
+      else if
+        key = 'p' && current_tool = "paste" && List.length !clicked_points = 1
+      then (
+        let paste_point = List.hd !clicked_points in
+        let pasted_data = paste !img_data !prev_cut paste_point in
+        img_data := pasted_data;
+        Printf.printf "Paste applied at point: (%d, %d)\n" (fst paste_point)
+          (snd paste_point);
+        flush stdout;
+
+        let new_img = Graphics.make_image pasted_data in
         redraw new_img img_x img_y w h toolbar_x current_tool;
 
         (* Reset and continue *)
