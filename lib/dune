@@ -4,5 +4,5 @@
  (modules ImageOps)
  (libraries graphics )
  (inline_tests)
- (preprocess (pps ppx_inline_test bisect_ppx))
+ (preprocess (pps ppx_inline_test))
  )
