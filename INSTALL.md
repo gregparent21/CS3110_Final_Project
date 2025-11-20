@@ -5,6 +5,10 @@ Installations:
 - If on mac, also install Xquartz
 - You might need to run [brew install libpng jpeg giflib libtiff]
 
+If on mac, you must install XQuartz
+- If not installed, run [brew install --cask xquartz]
+
+
 To run:
 - Run [open -a XQuartz] (only for mac users)
 - Run [echo $DISPLAY=:0]
