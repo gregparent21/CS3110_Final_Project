@@ -193,10 +193,17 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
   let invert_y = size_y () - 240 in
   let crop_y = size_y () - 360 in
   let prev_cut = ref (Array.make_matrix 0 0 0) in
+  (* Track current image position and size, starting from initial *)
+  let img_x_ref = ref img_x in
+  let img_y_ref = ref img_y in
+  let w_ref = ref w in
+  let h_ref = ref h in
   (* Assumes that [a1] and [a2] are equal in dimension. Gives [a1] - [a2]
      elementwise. *)
   let rec event_loop current_tool =
     let screen_x, screen_y = mouse_pos () in
+    let cur_w = !w_ref in
+    let cur_h = !h_ref in
     if button_down () then
       if screen_x >= toolbar_x then
         if
@@ -227,13 +234,26 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
         then (
           Printf.printf "Shrink tool selected! Shrinking image.\n";
           flush stdout;
+
           img_data := shrink !img_data 2;
-          let new_img = Graphics.make_image (shrink !img_data 2) in
+
+          (* update current width/height from the new data *)
+          let new_h = Array.length !img_data in
+          let new_w = if new_h = 0 then 0 else Array.length !img_data.(0) in
+          h_ref := new_h;
+          w_ref := new_w;
+
+          (* recenter image in the left area *)
+          let win_w = size_x () in
+          let win_h = size_y () in
+          img_x_ref := (toolbar_x - !w_ref) / 2;
+          img_y_ref := (win_h - !h_ref) / 2;
+
+          let new_img = Graphics.make_image !img_data in
           clear_graph ();
-          draw_image new_img (Array.length !img_data)
-            (Array.length !img_data.(0));
-          draw_axes (Array.length !img_data) (Array.length !img_data.(0)) w h;
-          draw_toolbar (size_x ()) (size_y ()) toolbar_x current_tool;
+          draw_image new_img !img_x_ref !img_y_ref;
+          draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+          draw_toolbar win_w win_h toolbar_x "shrink";
           synchronize ();
           Unix.sleepf 0.2;
           event_loop "shrink")
@@ -243,12 +263,19 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
         then (
           Printf.printf "Invert tool selected! Inverting colors.\n";
           flush stdout;
+
           (* Apply inversion to the current pixel data *)
           img_data := invert_colors !img_data;
           let new_img = Graphics.make_image !img_data in
 
-          (* Redraw window with inverted image *)
-          redraw new_img img_x img_y w h toolbar_x "invert";
+          (* Redraw window with inverted image using current origin/size *)
+          let win_w = size_x () in
+          let win_h = size_y () in
+          clear_graph ();
+          draw_image new_img !img_x_ref !img_y_ref;
+          draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+          draw_toolbar win_w win_h toolbar_x "invert";
+          synchronize ();
           Unix.sleepf 0.2;
           event_loop "invert")
         else if
@@ -266,13 +293,13 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
       else
         (* Click on image *)
         let img_px, img_py =
-          screen_to_image_coords screen_x screen_y img_x img_y
+          screen_to_image_coords screen_x screen_y !img_x_ref !img_y_ref
         in
         if
           (current_tool = "cut"
           || current_tool = "advanced_cut"
           || current_tool = "paste")
-          && is_within_bounds img_px img_py w h
+          && is_within_bounds img_px img_py cur_w cur_h
         then (
           clicked_points := (img_px, img_py) :: !clicked_points;
           Printf.printf "Point added: (%d, %d). Total: %d\n" img_px img_py
@@ -280,7 +307,9 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           flush stdout;
           Unix.sleepf 0.2;
           event_loop current_tool)
-        else if current_tool = "crop" && is_within_bounds img_px img_py w h then (
+        else if
+          current_tool = "crop" && is_within_bounds img_px img_py cur_w cur_h
+        then (
           (* CROP MODE: collect two corners, then apply crop *)
           crop_points := (img_px, img_py) :: !crop_points;
           Printf.printf "Crop corner: (%d, %d). Total: %d/2\n" img_px img_py
@@ -300,18 +329,20 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
 
             let new_h = Array.length !img_data in
             let new_w = Array.length !img_data.(0) in
-            let new_img = Graphics.make_image !img_data in
+            h_ref := new_h;
+            w_ref := new_w;
 
-            (* Re-center image in left area *)
+            (* recenter image in the left area *)
             let win_w = size_x () in
             let win_h = size_y () in
-            let toolbar_x = 650 in
-            let img_x' = (toolbar_x - new_w) / 2 in
-            let img_y' = (win_h - new_h) / 2 in
+            img_x_ref := (toolbar_x - !w_ref) / 2;
+            img_y_ref := (win_h - !h_ref) / 2;
+
+            let new_img = Graphics.make_image !img_data in
 
             clear_graph ();
-            draw_image new_img img_x' img_y';
-            draw_axes img_x' img_y' new_w new_h;
+            draw_image new_img !img_x_ref !img_y_ref;
+            draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
             draw_toolbar win_w win_h toolbar_x "crop";
             synchronize ();
 
@@ -353,7 +384,8 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
 
         (* Redraw *)
         let new_img = Graphics.make_image cut_data in
-        redraw new_img img_x img_y w h toolbar_x current_tool;
+        redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x
+          current_tool;
 
         (* Reset and continue *)
         clicked_points := [];
@@ -375,7 +407,8 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
         flush stdout;
 
         let new_img = Graphics.make_image cut_data in
-        redraw new_img img_x img_y w h toolbar_x current_tool;
+        redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x
+          current_tool;
 
         (* Reset and continue *)
         clicked_points := [];
@@ -393,7 +426,8 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
         flush stdout;
 
         let new_img = Graphics.make_image pasted_data in
-        redraw new_img img_x img_y w h toolbar_x current_tool;
+        redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x
+          current_tool;
 
         (* Reset and continue *)
         clicked_points := [];

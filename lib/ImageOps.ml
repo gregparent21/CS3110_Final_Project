@@ -201,30 +201,41 @@ let flip_horizontal (img : int array array) : int array array =
 
 let crop (data : int array array) ((x1, y1) : int * int) ((x2, y2) : int * int)
     : int array array =
-  try
-    let x_min = min x1 x2 in
-    let x_max = max x1 x2 in
-    let y_min = min y1 y2 in
-    let y_max = max y1 y2 in
-
-    let height = Array.length data in
+  let height = Array.length data in
+  if height = 0 then [||]
+  else
     let width = Array.length data.(0) in
 
-    if
-      x_min < 0 || y_min < 0 || x_max >= width || y_max >= height
-      || x_min > x_max || y_min > y_max
-    then failwith "crop: coordinates out of bounds"
-    else
-      let new_h = y_max - y_min + 1 in
-      let new_w = x_max - x_min + 1 in
-      let result = Array.make_matrix new_h new_w 0 in
-      for j = 0 to new_h - 1 do
-        for i = 0 to new_w - 1 do
-          result.(j).(i) <- data.(y_min + j).(x_min + i)
-        done
-      done;
-      result
-  with _ -> failwith "crop: invalid coordinates"
+    (* map "geometry" y (0 = bottom) to array row index (0 = top) *)
+    let geom_y_to_row y = height - 1 - y in
+
+    (* clamp to valid geometry range before converting *)
+    let clamp v lo hi = max lo (min v hi) in
+
+    let gx1 = clamp x1 0 (width - 1) in
+    let gx2 = clamp x2 0 (width - 1) in
+    let gy1 = clamp y1 0 (height - 1) in
+    let gy2 = clamp y2 0 (height - 1) in
+
+    let r1 = geom_y_to_row gy1 in
+    let r2 = geom_y_to_row gy2 in
+
+    (* normalize to min/max in array index space *)
+    let x_min = min gx1 gx2 in
+    let x_max = max gx1 gx2 in
+    let y_min = min r1 r2 in
+    let y_max = max r1 r2 in
+
+    let new_h = y_max - y_min + 1 in
+    let new_w = x_max - x_min + 1 in
+
+    let result = Array.make_matrix new_h new_w 0 in
+    for j = 0 to new_h - 1 do
+      for i = 0 to new_w - 1 do
+        result.(j).(i) <- data.(y_min + j).(x_min + i)
+      done
+    done;
+    result
 
 let array_sub (a : int array array) (b : int array array) : int array array =
   try
