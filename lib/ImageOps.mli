@@ -36,3 +36,7 @@ val replace_color :
 (** [replace_color data (src_r, src_g, src_b) (dst_r, dst_g, dst_b)] returns a
     new pixel matrix where every pixel whose RGB components exactly match
     [(src_r, src_g, src_b)] is replaced with [(dst_r, dst_g, dst_b)]. *)
+
+val pixelate : int array array -> int -> int array array
+(**[pixelate] takes an image and pixelates it by a factor a factor input by a
+   user.*)
