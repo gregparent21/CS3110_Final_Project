@@ -131,25 +131,79 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
   moveto (toolbar_x + 5) (button_y + button_h + 5);
   draw_string "Click to select cut tool";
 
+  (* Draw Paste button *)
+  let button_paste_y = win_h - 120 in
+  draw_button toolbar_x button_paste_y button_w button_h "Paste"
+    (current_tool = "paste");
+  moveto (toolbar_x + 5) (button_paste_y + button_h + 5);
+  draw_string "Click to select paste tool";
+
   (*Draw Compress button *)
-  let button_compress_y = win_h - 120 in
+  let button_compress_y = win_h - 180 in
   draw_button toolbar_x button_compress_y button_w button_h "shrink"
     (current_tool = "shrink");
-  moveto (toolbar_x + 5) (button_y + button_h - 60);
-  draw_string "Click to shrink image"
+  moveto (toolbar_x + 5) (button_compress_y + button_h + 5);
+  draw_string "Click to shrink image";
+
+  (* Draw Invert button *)
+  let button_invert_y = win_h - 240 in
+  draw_button toolbar_x button_invert_y button_w button_h "invert"
+    (current_tool = "invert");
+  moveto (toolbar_x + 5) (button_invert_y + button_h + 5);
+  draw_string "Click to invert colors";
+
+  (* Draw Mirror *)
+  let button_mirror_y = win_h - 300 in
+  draw_button toolbar_x button_mirror_y button_w button_h "mirror"
+    (current_tool = "mirror");
+  moveto (toolbar_x + 5) (button_mirror_y + button_h + 5);
+  draw_string "Click to mirror image";
+
+  (* Draw Crop *)
+  let button_crop_y = win_h - 360 in
+  draw_button toolbar_x button_crop_y button_w button_h "Crop"
+    (current_tool = "crop");
+  moveto (toolbar_x + 5) (button_crop_y + button_h + 5);
+  draw_string "Click to crop"
+
+(* Draw Rotate *)
+
+(** [redraw img img_x img_y w h toolbar_x current_tool] is a helper function
+    that redraws the image after applying the cut. *)
+let redraw img img_x img_y w h toolbar_x current_tool =
+  clear_graph ();
+  draw_image img img_x img_y;
+  draw_axes img_x img_y w h;
+  draw_toolbar (size_x ()) (size_y ()) toolbar_x current_tool;
+  synchronize ()
 
 (**[handle_buttons] allows the user to interact with buttons and alter an image
    accordingly.*)
 let handle_buttons img_x img_y w h img_data toolbar_x =
   let clicked_points = ref [] in
+
+  let crop_points = ref [] in
   (*These lengths defined below are from [draw_toolbar]. Must accurately reflect
     any of the pre-defined values.*)
   let button_width = 90 in
   let button_height = 40 in
   let cut_y = size_y () - 60 in
-  let compress_y = size_y () - 120 in
+  let paste_y = size_y () - 120 in
+  let compress_y = size_y () - 180 in
+  let invert_y = size_y () - 240 in
+  let crop_y = size_y () - 360 in
+  let prev_cut = ref (Array.make_matrix 0 0 0) in
+  (* Track current image position and size, starting from initial *)
+  let img_x_ref = ref img_x in
+  let img_y_ref = ref img_y in
+  let w_ref = ref w in
+  let h_ref = ref h in
+  (* Assumes that [a1] and [a2] are equal in dimension. Gives [a1] - [a2]
+     elementwise. *)
   let rec event_loop current_tool =
     let screen_x, screen_y = mouse_pos () in
+    let cur_w = !w_ref in
+    let cur_h = !h_ref in
     if button_down () then
       if screen_x >= toolbar_x then
         if
@@ -157,63 +211,223 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             button_height
         then (
           Printf.printf
-            "Cut tool selected! Click on image to set points. Press 'c' to \
-             apply cut, 'r' to reset.\n";
+            "Cut tool selected! Press a to enter advanced cut. Otherwise, \
+             select two opposite corners of the cut area. Then, press 'c' to \
+             cut or 'r' to reset. \n";
           flush stdout;
           Unix.sleepf 0.2;
           event_loop "cut")
+        else if
+          is_point_in_rect screen_x screen_y toolbar_x paste_y button_width
+            button_height
+        then (
+          Printf.printf
+            "Paste tool selected! Select the bottom left endpoint where you \
+             would like to paste the previous cut. Press 'p' to apply the \
+             paste and 'r' to reset. \n";
+          flush stdout;
+          Unix.sleepf 0.2;
+          event_loop "paste")
         else if
           is_point_in_rect screen_x screen_y toolbar_x compress_y button_width
             button_height
         then (
           Printf.printf "Shrink tool selected! Shrinking image.\n";
           flush stdout;
+
           img_data := shrink !img_data 2;
-          let new_img = Graphics.make_image (shrink !img_data 2) in
+
+          (* update current width/height from the new data *)
+          let new_h = Array.length !img_data in
+          let new_w = if new_h = 0 then 0 else Array.length !img_data.(0) in
+          h_ref := new_h;
+          w_ref := new_w;
+
+          (* recenter image in the left area *)
+          let win_w = size_x () in
+          let win_h = size_y () in
+          img_x_ref := (toolbar_x - !w_ref) / 2;
+          img_y_ref := (win_h - !h_ref) / 2;
+
+          let new_img = Graphics.make_image !img_data in
           clear_graph ();
-          draw_image new_img (Array.length !img_data)
-            (Array.length !img_data.(0));
-          draw_axes (Array.length !img_data) (Array.length !img_data.(0)) w h;
-          draw_toolbar (size_x ()) (size_y ()) toolbar_x current_tool;
+          draw_image new_img !img_x_ref !img_y_ref;
+          draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+          draw_toolbar win_w win_h toolbar_x "shrink";
           synchronize ();
           Unix.sleepf 0.2;
           event_loop "shrink")
+        else if
+          is_point_in_rect screen_x screen_y toolbar_x invert_y button_width
+            button_height
+        then (
+          Printf.printf "Invert tool selected! Inverting colors.\n";
+          flush stdout;
+
+          (* Apply inversion to the current pixel data *)
+          img_data := invert_colors !img_data;
+          let new_img = Graphics.make_image !img_data in
+
+          (* Redraw window with inverted image using current origin/size *)
+          let win_w = size_x () in
+          let win_h = size_y () in
+          clear_graph ();
+          draw_image new_img !img_x_ref !img_y_ref;
+          draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+          draw_toolbar win_w win_h toolbar_x "invert";
+          synchronize ();
+          Unix.sleepf 0.2;
+          event_loop "invert")
+        else if
+          is_point_in_rect screen_x screen_y toolbar_x crop_y button_width
+            button_height
+        then (
+          crop_points := [];
+          Printf.printf "Crop tool selected! Click two corners.\n";
+          flush stdout;
+          Unix.sleepf 0.2;
+          event_loop "crop")
         else (
           Unix.sleepf 0.2;
           event_loop current_tool)
       else
         (* Click on image *)
         let img_px, img_py =
-          screen_to_image_coords screen_x screen_y img_x img_y
+          screen_to_image_coords screen_x screen_y !img_x_ref !img_y_ref
         in
-        if current_tool = "cut" && is_within_bounds img_px img_py w h then (
+        if
+          (current_tool = "cut"
+          || current_tool = "advanced_cut"
+          || current_tool = "paste")
+          && is_within_bounds img_px img_py cur_w cur_h
+        then (
           clicked_points := (img_px, img_py) :: !clicked_points;
           Printf.printf "Point added: (%d, %d). Total: %d\n" img_px img_py
             (List.length !clicked_points);
           flush stdout;
           Unix.sleepf 0.2;
           event_loop current_tool)
+        else if
+          current_tool = "crop" && is_within_bounds img_px img_py cur_w cur_h
+        then (
+          (* CROP MODE: collect two corners, then apply crop *)
+          crop_points := (img_px, img_py) :: !crop_points;
+          Printf.printf "Crop corner: (%d, %d). Total: %d/2\n" img_px img_py
+            (List.length !crop_points);
+          flush stdout;
+
+          if List.length !crop_points = 2 then (
+            (* Take the two points *)
+            let p1, p2 =
+              match !crop_points with
+              | [ a; b ] -> (a, b)
+              | _ -> failwith "impossible crop_points length"
+            in
+
+            (* Apply crop to pixel data *)
+            img_data := crop !img_data p1 p2;
+
+            let new_h = Array.length !img_data in
+            let new_w = Array.length !img_data.(0) in
+            h_ref := new_h;
+            w_ref := new_w;
+
+            (* recenter image in the left area *)
+            let win_w = size_x () in
+            let win_h = size_y () in
+            img_x_ref := (toolbar_x - !w_ref) / 2;
+            img_y_ref := (win_h - !h_ref) / 2;
+
+            let new_img = Graphics.make_image !img_data in
+
+            clear_graph ();
+            draw_image new_img !img_x_ref !img_y_ref;
+            draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+            draw_toolbar win_w win_h toolbar_x "crop";
+            synchronize ();
+
+            crop_points := [];
+            Printf.printf "Crop applied.\n";
+            flush stdout;
+
+            (* Leave crop mode after applying *)
+            event_loop "")
+          else (
+            Unix.sleepf 0.2;
+            event_loop current_tool))
         else (
           Printf.printf "No tool selected or click outside bounds\n";
           Unix.sleepf 0.2;
           event_loop current_tool)
     else if key_pressed () then
       let key = read_key () in
-      if key = 'c' && current_tool = "cut" && List.length !clicked_points > 2
+      if key = 'a' && current_tool = "cut" then (
+        Printf.printf
+          "Advanced cut mode activated! Select multiple points to define a \
+           polygon. Press 'c' to cut or 'r' to reset.\n";
+        flush stdout;
+        Unix.sleepf 0.01;
+        event_loop "advanced_cut")
+      else if
+        key = 'c' && current_tool = "cut" && List.length !clicked_points = 2
       then (
         (* Apply cut *)
-        let cut_data = cut_advanced !img_data !clicked_points in
-        Printf.printf "Cut applied with %d points!\n"
-          (List.length !clicked_points);
+        let a, b =
+          (List.hd !clicked_points, List.hd (List.tl !clicked_points))
+        in
+        let cut_data = cut_square !img_data a b in
+        prev_cut := array_sub !img_data cut_data;
+        img_data := cut_data;
+        Printf.printf "Cut square applied with points: (%d, %d) and (%d, %d)\n"
+          (fst a) (snd a) (fst b) (snd b);
         flush stdout;
 
         (* Redraw *)
         let new_img = Graphics.make_image cut_data in
-        clear_graph ();
-        draw_image new_img img_x img_y;
-        draw_axes img_x img_y w h;
-        draw_toolbar (size_x ()) (size_y ()) toolbar_x current_tool;
-        synchronize ();
+        redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x
+          current_tool;
+
+        (* Reset and continue *)
+        clicked_points := [];
+        Printf.printf "Points reset. Select a tool and continue.\n";
+        flush stdout;
+        event_loop "")
+      else if
+        key = 'c'
+        && current_tool = "advanced_cut"
+        && List.length !clicked_points > 2
+      then (
+        let cut_data = cut_advanced !img_data (List.rev !clicked_points) in
+        prev_cut := array_sub !img_data cut_data;
+        img_data := cut_data;
+        Printf.printf "Advanced cut applied with points:\n";
+        List.iter
+          (fun (x, y) -> Printf.printf "(%d, %d)\n" x y)
+          (List.rev !clicked_points);
+        flush stdout;
+
+        let new_img = Graphics.make_image cut_data in
+        redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x
+          current_tool;
+
+        (* Reset and continue *)
+        clicked_points := [];
+        Printf.printf "Points reset. Select a tool and continue.\n";
+        flush stdout;
+        event_loop "")
+      else if
+        key = 'p' && current_tool = "paste" && List.length !clicked_points = 1
+      then (
+        let paste_point = List.hd !clicked_points in
+        let pasted_data = paste !img_data !prev_cut paste_point in
+        img_data := pasted_data;
+        Printf.printf "Paste applied at point: (%d, %d)\n" (fst paste_point)
+          (snd paste_point);
+        flush stdout;
+
+        let new_img = Graphics.make_image pasted_data in
+        redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x
+          current_tool;
 
         (* Reset and continue *)
         clicked_points := [];

@@ -18,13 +18,17 @@ val intersects_segment : int * int -> int * int -> int * int -> bool
     positive infinity x intersects the line segment from [p2] to [p3]. *)
 
 val cut_square : int array array -> int * int -> int * int -> int array array
-(** [cut_square img x y] removes the square with lower-left endpoint x and
-    upper-right endpoing y from img. *)
+(** [cut_square img x y] removes the square with corners x and y from img. *)
 
 val cut_advanced : int array array -> (int * int) list -> int array array
 (** [cut_advanced img lst] removes the polygon defined by the line segments
     between each two conseuctive pairs of integers (wrapping the last pair to
     the first). *)
+
+val paste : int array array -> int array array -> int * int -> int array array
+(** [paste base overlay (x, y)] pastes the [overlay] image onto the [base] image
+    with the bottom-left corner of the overlay at position [(x, y)] in the base
+    image. *)
 
 val shrink : int array array -> int -> int array array
 (**[shrink] "compresses" a given image by reducing its total pixel count and
@@ -37,6 +41,18 @@ val replace_color :
     new pixel matrix where every pixel whose RGB components exactly match
     [(src_r, src_g, src_b)] is replaced with [(dst_r, dst_g, dst_b)]. *)
 
-val pixelate : int array array -> int -> int array array
-(**[pixelate] takes an image and pixelates it by a factor a factor input by a
-   user.*)
+val invert_colors : int array array -> int array array
+(** [invert_colors data] returns a new pixel matrix where each pixel's RGB
+    values are inverted: (r, g, b) becomes (255 - r, 255 - g, 255 - b). *)
+
+val flip_horizontal : int array array -> int array array
+(** [flip_horizontal img] returns a new image that is a horizontal mirror of
+    [img]. *)
+
+val crop : int array array -> int * int -> int * int -> int array array
+(** [crop data (x1, y1) (x2, y2)] returns a new pixel matrix consisting only of
+    the rectangular region between [(x1, y1)] and [(x2, y2)], inclusive. *)
+
+val array_sub : int array array -> int array array -> int array array
+(** [array_sub A B] returns A-B elementwise. Requires that [A] and [B] are the
+    same size. *)

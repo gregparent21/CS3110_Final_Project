@@ -4,61 +4,55 @@ let screen_to_image_coords screen_x screen_y img_x img_y =
 let is_within_bounds x y w h = x >= 0 && x < w && y >= 0 && y < h
 let pixel_to_string r g b = Printf.sprintf "RGB(%d, %d, %d)" r g b
 
-let cut_square data (start_x, start_y) (end_x, end_y) =
+let standard_coordinates ((a, b) : int * int) ((x, y) : int * int) =
+  if a < x && b > y then ((a, y), (x, b))
+  else if a > x && b < y then ((x, b), (a, y))
+  else if a > x && b > y then ((x, y), (a, b))
+  else ((a, b), (x, y))
+
+let%test "standard_coordinates" =
+  standard_coordinates (1, 4) (4, 1) = ((1, 1), (4, 4))
+
+let%test "standard_coordinates 2" =
+  standard_coordinates (4, 1) (1, 4) = ((1, 1), (4, 4))
+
+let%test "standard_coordinates 3" =
+  standard_coordinates (1, 1) (4, 4) = ((1, 1), (4, 4))
+
+let%test "standard_coordinates 4" =
+  standard_coordinates (4, 4) (1, 1) = ((1, 1), (4, 4))
+
+let cut_square (data : int array array) ((start_x, start_y) : int * int)
+    ((end_x, end_y) : int * int) =
   try
+    let (a, b), (u, v) =
+      standard_coordinates (start_x, start_y) (end_x, end_y)
+    in
+    let height = Array.length data in
     Array.mapi
-      (fun y row ->
+      (fun temp row ->
+        let y = height - temp - 1 in
         Array.mapi
           (fun x rgb ->
-            if start_x <= x && x <= end_x && start_y <= y && y <= end_y then
+            if a <= x && x <= u && b <= y && y <= v then
               Graphics.rgb 255 255 255
             else rgb)
           row)
       data
   with _ -> raise (Failure "cut_advanced: invalid coordinates")
 
-(** [left (s_x, s_y) (e_x, e_y) (p_x, p_y)] determines if the point (p_x, p_y)
-    lives to the left or right of the directed line segment. *)
-let left (start_x, start_y) (end_x, end_y) (point_x, point_y) =
-  ((end_x - start_x) * (point_y - start_y))
-  - ((end_y - start_y) * (point_x - start_x))
-  > 0
-
-let on_segment (s_x, s_y) (e_x, e_y) (p_x, p_y) =
+let on_segment ((s_x, s_y) : int * int) ((e_x, e_y) : int * int)
+    ((p_x, p_y) : int * int) =
   ((e_x - s_x) * (p_y - s_y)) - ((e_y - s_y) * (p_x - s_x)) = 0
   && p_x >= min s_x e_x
   && p_x <= max s_x e_x
   && p_y >= min s_y e_y
   && p_y <= max s_y e_y
 
-(** [winding_number (p_x, p_y) polygon] determines the winding number of the
-    point (p_x, p_y) with respect to the possible non-simple polygon. A zero
-    winding number means the point lies in the exterior and a non-zero winding
-    number means the point lies in the interior. *)
-let winding_number (p_x, p_y) polygon =
-  let n = List.length polygon in
-  let wn = ref 0 in
-  for i = 0 to n - 1 do
-    let x0, y0 = List.nth polygon i in
-    let x1, y1 = List.nth polygon ((i + 1) mod n) in
-    if on_segment (x0, y0) (x1, y1) (p_x, p_y) then wn := 1
-    else if y0 <= p_y then
-      if y1 > p_y && left (x0, y0) (x1, y1) (p_x, p_y) then wn := !wn + 1
-      else if y1 <= p_y && not (left (x0, y0) (x1, y1) (p_x, p_y)) then
-        wn := !wn - 1
-  done;
-  !wn
-
-(* Currently uses an inefficient algorithm (checks every possible pixel) that
-   handles even complex polygons. The algorithm is much simpler if we care about
-   only simple polygons. let cut_advanced data pairs = try Array.mapi (fun y row
-   -> Array.mapi (fun x rgb -> if winding_number (x, y) pairs <> 0 then
-   Graphics.rgb 255 255 255 else rgb) row) data with _ -> raise (Failure
-   "cut_advanced: invalid coordinates")*)
-
 (* Determines if the ray in the positive x infinity direction from (x, y)
    intersects the line segment from (x1, y1) to (x2, y2).*)
-let intersects_segment (x, y) (x1, y1) (x2, y2) =
+let intersects_segment ((x, y) : int * int) ((x1, y1) : int * int)
+    ((x2, y2) : int * int) =
   (* Ensure y1 <= y2 *)
   let x1, y1, x2, y2 =
     if y1 <= y2 then (x1, y1, x2, y2) else (x2, y2, x1, y1)
@@ -72,7 +66,7 @@ let intersects_segment (x, y) (x1, y1) (x2, y2) =
         +. float x1
 
 (* Currently supports only SIMPLE polygons. *)
-let cut_advanced data (pairs : (int * int) list) =
+let cut_advanced (data : int array array) (pairs : (int * int) list) =
   let n = List.length pairs in
   if n < 3 then
     raise (Failure "cut_advanced: polygon must have at least 3 vertices");
@@ -103,6 +97,23 @@ let cut_advanced data (pairs : (int * int) list) =
           row)
       data
   with _ -> raise (Failure "cut_advanced: invalid coordinates")
+
+let paste (base : int array array) (overlay : int array array)
+    ((x, y) : int * int) : int array array =
+  let overlay_height = Array.length overlay in
+  let overlay_width = Array.length overlay.(0) in
+  let base_height = Array.length base in
+  let y = base_height - y - 1 in
+  Array.mapi
+    (fun temp row ->
+      let i = temp - 1 - base_height in
+      Array.mapi
+        (fun j pixel ->
+          if i >= y && i < y + overlay_height && j >= x && j < x + overlay_width
+          then overlay.(i - y).(j - x)
+          else pixel)
+        row)
+    base
 
 (**[r] takes a pixel point and returns that pixel's red value (0-255).*)
 let r p = (p lsr 16) land 0xFF
@@ -167,3 +178,68 @@ let replace_color (data : int array array)
           else pixel)
         row)
     data
+
+let invert_colors (data : int array array) : int array array =
+  Array.map
+    (fun row ->
+      Array.map
+        (fun p ->
+          let ir = 255 - r p in
+          let ig = 255 - g p in
+          let ib = 255 - b p in
+          Graphics.rgb ir ig ib)
+        row)
+    data
+
+let flip_horizontal (img : int array array) : int array array =
+  let height = Array.length img in
+  if height = 0 then img
+  else
+    let width = Array.length img.(0) in
+    Array.init height (fun y ->
+        Array.init width (fun x -> img.(y).(width - 1 - x)))
+
+let crop (data : int array array) ((x1, y1) : int * int) ((x2, y2) : int * int)
+    : int array array =
+  let height = Array.length data in
+  if height = 0 then [||]
+  else
+    let width = Array.length data.(0) in
+
+    (* map "geometry" y (0 = bottom) to array row index (0 = top) *)
+    let geom_y_to_row y = height - 1 - y in
+
+    (* clamp to valid geometry range before converting *)
+    let clamp v lo hi = max lo (min v hi) in
+
+    let gx1 = clamp x1 0 (width - 1) in
+    let gx2 = clamp x2 0 (width - 1) in
+    let gy1 = clamp y1 0 (height - 1) in
+    let gy2 = clamp y2 0 (height - 1) in
+
+    let r1 = geom_y_to_row gy1 in
+    let r2 = geom_y_to_row gy2 in
+
+    (* normalize to min/max in array index space *)
+    let x_min = min gx1 gx2 in
+    let x_max = max gx1 gx2 in
+    let y_min = min r1 r2 in
+    let y_max = max r1 r2 in
+
+    let new_h = y_max - y_min + 1 in
+    let new_w = x_max - x_min + 1 in
+
+    let result = Array.make_matrix new_h new_w 0 in
+    for j = 0 to new_h - 1 do
+      for i = 0 to new_w - 1 do
+        result.(j).(i) <- data.(y_min + j).(x_min + i)
+      done
+    done;
+    result
+
+let array_sub (a : int array array) (b : int array array) : int array array =
+  try
+    Array.mapi
+      (fun j row -> Array.mapi (fun i pixel -> pixel - b.(j).(i)) row)
+      a
+  with _ -> raise (Failure "Array Subtraction Error!")
