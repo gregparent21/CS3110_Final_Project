@@ -243,3 +243,30 @@ let array_sub (a : int array array) (b : int array array) : int array array =
       (fun j row -> Array.mapi (fun i pixel -> pixel - b.(j).(i)) row)
       a
   with _ -> raise (Failure "Array Subtraction Error!")
+
+(**[square_replace] is a helper function for the pixelate function. Takes in the
+   reference to the new image created in pixelate and does all the pixelation
+   where we replace square segments of the image with the same RGB value.
+   `bounds` determines the dimensions of the square segment.*)
+let square_replace (data : int array array) (bounds : int) (x : int) (y : int)
+    (avg : int) : unit =
+  for x = x to x + bounds - 1 do
+    for y = y to y + bounds - 1 do
+      data.(x).(y) <- avg
+    done
+  done
+
+let pixelate (data : int array array) (factor : int) : int array array =
+  if factor > 0 then (
+    for x = 0 to (Array.length data / factor) - 1 do
+      for y = 0 to (Array.length data.(x) / factor) - 1 do
+        square_replace data factor (x * factor) (y * factor)
+          (average_neighbors data factor (x * factor) (y * factor))
+      done
+    done;
+    (* if (Array.length data mod factor = 0 && Array.length data.(0) mod factor
+       = 0) then *)
+    data
+    (* else if Array.length data mod factor <> 0 then for x = Array.length data
+       mod fact *))
+  else data

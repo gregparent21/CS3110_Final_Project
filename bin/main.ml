@@ -164,9 +164,14 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
   draw_button toolbar_x button_crop_y button_w button_h "Crop"
     (current_tool = "crop");
   moveto (toolbar_x + 5) (button_crop_y + button_h + 5);
-  draw_string "Click to crop"
+  draw_string "Click to crop";
 
-(* Draw Rotate *)
+  (* Draw Pixelate *)
+  let button_pixelate = win_h - 420 in
+  draw_button toolbar_x button_pixelate button_w button_h "pixelate"
+    (current_tool = "pixelate");
+  moveto (toolbar_x + 5) (button_pixelate + button_h + 5);
+  draw_string "Click to pixelate"
 
 (** [redraw img img_x img_y w h toolbar_x current_tool] is a helper function
     that redraws the image after applying the cut. *)
@@ -192,6 +197,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
   let compress_y = size_y () - 180 in
   let invert_y = size_y () - 240 in
   let crop_y = size_y () - 360 in
+  let pixelate_y = size_y () - 420 in
   let prev_cut = ref (Array.make_matrix 0 0 0) in
   (* Track current image position and size, starting from initial *)
   let img_x_ref = ref img_x in
@@ -287,6 +293,35 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           flush stdout;
           Unix.sleepf 0.2;
           event_loop "crop")
+        else if
+          is_point_in_rect screen_x screen_y toolbar_x pixelate_y button_width
+            button_height
+        then (
+          Printf.printf "Pixelate tool selected! Pixelating image.\n";
+          flush stdout;
+
+          img_data := pixelate !img_data 4;
+
+          (* update current width/height from the new data *)
+          let new_h = Array.length !img_data in
+          let new_w = if new_h = 0 then 0 else Array.length !img_data.(0) in
+          h_ref := new_h;
+          w_ref := new_w;
+
+          (* recenter image in the left area *)
+          let win_w = size_x () in
+          let win_h = size_y () in
+          img_x_ref := (toolbar_x - !w_ref) / 2;
+          img_y_ref := (win_h - !h_ref) / 2;
+
+          let new_img = Graphics.make_image !img_data in
+          clear_graph ();
+          draw_image new_img !img_x_ref !img_y_ref;
+          draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+          draw_toolbar win_w win_h toolbar_x "pixelate";
+          synchronize ();
+          Unix.sleepf 0.2;
+          event_loop "pixelate")
         else (
           Unix.sleepf 0.2;
           event_loop current_tool)
