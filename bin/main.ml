@@ -94,28 +94,28 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
   draw_string "Click to compress image";
 
   (* Draw Invert button *)
-  let button_invert_y = win_h - 240 in
+  let button_invert_y = win_h - 300 in
   draw_button toolbar_x button_invert_y button_w button_h "invert"
     (current_tool = "invert");
   moveto (toolbar_x + 5) (button_invert_y + button_h + 5);
   draw_string "Click to invert colors";
 
   (* Draw Mirror *)
-  let button_mirror_y = win_h - 300 in
+  let button_mirror_y = win_h - 360 in
   draw_button toolbar_x button_mirror_y button_w button_h "mirror"
     (current_tool = "mirror");
   moveto (toolbar_x + 5) (button_mirror_y + button_h + 5);
   draw_string "Click to mirror image";
 
   (* Draw Crop *)
-  let button_crop_y = win_h - 360 in
+  let button_crop_y = win_h - 420 in
   draw_button toolbar_x button_crop_y button_w button_h "Crop"
     (current_tool = "crop");
   moveto (toolbar_x + 5) (button_crop_y + button_h + 5);
   draw_string "Click to crop";
 
   (* Draw Pixelate *)
-  let button_pixelate = win_h - 420 in
+  let button_pixelate = win_h - 480 in
   draw_button toolbar_x button_pixelate button_w button_h "pixelate"
     (current_tool = "pixelate");
   moveto (toolbar_x + 5) (button_pixelate + button_h + 5);
@@ -145,10 +145,10 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
   let adv_y = size_y () - 120 in
   let paste_y = size_y () - 180 in
   let compress_y = size_y () - 240 in
-  let invert_y = size_y () - 240 in
-  (* let mirror_y = size_y () - 300 in *)
-  let crop_y = size_y () - 360 in
-  let pixelate_y = size_y () - 420 in
+  let invert_y = size_y () - 300 in
+  let mirror_y = size_y () - 360 in
+  let crop_y = size_y () - 420 in
+  let pixelate_y = size_y () - 480 in
   let prev_cut = ref (Array.make_matrix 0 0 0) in
   (* Track current image position and size, starting from initial *)
   let img_x_ref = ref img_x in
@@ -220,10 +220,10 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           clear_graph ();
           draw_image new_img !img_x_ref !img_y_ref;
           draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
-          draw_toolbar win_w win_h toolbar_x "shrink";
+          draw_toolbar win_w win_h toolbar_x "compress";
           synchronize ();
           Unix.sleepf 0.2;
-          event_loop "shrink")
+          event_loop "compress")
         else if
           is_point_in_rect screen_x screen_y toolbar_x invert_y button_width
             button_height
@@ -245,6 +245,24 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           synchronize ();
           Unix.sleepf 0.2;
           event_loop "invert")
+        else if
+          is_point_in_rect screen_x screen_y toolbar_x mirror_y button_width
+            button_height
+        then (
+          Printf.printf "Mirror tool selected! Flipping horizontally.\n";
+          flush stdout;
+
+          img_data := flip_horizontal !img_data;
+          let new_img = Graphics.make_image !img_data in
+          let win_w = size_x () in
+          let win_h = size_y () in
+          clear_graph ();
+          draw_image new_img !img_x_ref !img_y_ref;
+          draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+          draw_toolbar win_w win_h toolbar_x "mirror";
+          synchronize ();
+          Unix.sleepf 0.2;
+          event_loop "mirror")
         else if
           is_point_in_rect screen_x screen_y toolbar_x crop_y button_width
             button_height
@@ -505,6 +523,7 @@ let () =
      compression tool.\n"; Printf.printf "Press 'c' to apply cut, 'r' to reset
      points, 'q' to quit.\n"; *)
   Printf.printf "Welcome to CamlShop! \n";
+
   flush stdout;
 
   handle_buttons img_x img_y w h data toolbar_x
