@@ -1,8 +1,9 @@
 (library
- (instrumentation (backend bisect_ppx))
+ (instrumentation
+  (backend bisect_ppx))
  (name FinalProject)
- (modules ImageOps)
- (libraries graphics )
+ (modules ImageOps ImageLoader)
+ (libraries graphics camlimages.png camlimages.core camlimages.graphics)
  (inline_tests)
- (preprocess (pps ppx_inline_test))
- )
+ (preprocess
+  (pps ppx_inline_test)))
