@@ -119,7 +119,14 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
   draw_button toolbar_x button_pixelate button_w button_h "pixelate"
     (current_tool = "pixelate");
   moveto (toolbar_x + 5) (button_pixelate + button_h + 5);
-  draw_string "Click to pixelate"
+  draw_string "Click to pixelate";
+
+  (* Draw Save button *)
+  let button_save_y = win_h - 540 in
+  draw_button toolbar_x button_save_y button_w button_h "Save"
+    (current_tool = "save");
+  moveto (toolbar_x + 5) (button_save_y + button_h + 5);
+  draw_string "Click to save image"
 
 (** [redraw img img_x img_y w h toolbar_x current_tool] is a helper function
     that redraws the image after applying the cut. *)
@@ -149,6 +156,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
   let mirror_y = size_y () - 360 in
   let crop_y = size_y () - 420 in
   let pixelate_y = size_y () - 480 in
+  let save_y = size_y () - 540 in
   let prev_cut = ref (Array.make_matrix 0 0 0) in
   (* Track current image position and size, starting from initial *)
   let img_x_ref = ref img_x in
@@ -301,6 +309,34 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           synchronize ();
           Unix.sleepf 0.2;
           event_loop "pixelate")
+        else if
+          is_point_in_rect screen_x screen_y toolbar_x save_y button_width
+            button_height
+        then (
+          Printf.printf
+            "Save tool selected! Enter filename (without extension): ";
+          flush stdout;
+          let filename = read_line () in
+          Printf.printf "Choose format: (1) PNG or (2) JPG? ";
+          flush stdout;
+          let format_choice = read_line () in
+          (match format_choice with
+          | "1" | "png" | "PNG" ->
+              FinalProject.FileSaver.save_image_to_png !img_data
+                (filename ^ ".png");
+              Printf.printf "Image saved as %s.png\n" filename
+          | "2" | "jpg" | "JPG" | "jpeg" | "JPEG" ->
+              FinalProject.FileSaver.save_image_to_jpg !img_data
+                (filename ^ ".jpg");
+              Printf.printf "Image saved as %s.jpg\n" filename
+          | _ ->
+              Printf.printf "Invalid format. Defaulting to PNG.\n";
+              FinalProject.FileSaver.save_image_to_png !img_data
+                (filename ^ ".png");
+              Printf.printf "Image saved as %s.png\n" filename);
+          flush stdout;
+          Unix.sleepf 0.2;
+          event_loop "")
         else (
           Unix.sleepf 0.2;
           event_loop current_tool)
@@ -490,7 +526,7 @@ let () =
     Printf.printf "File not found: %s\n" path;
     exit 1);
 
-  open_graph " 800x600";
+  open_graph " 1000x700";
   set_window_title (Filename.basename path);
   auto_synchronize false;
 

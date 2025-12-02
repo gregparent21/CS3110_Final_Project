@@ -2,7 +2,7 @@
  (instrumentation
   (backend bisect_ppx))
  (name FinalProject)
- (modules ImageOps ImageLoader)
+ (modules ImageOps ImageLoader FileSaver)
  (libraries graphics camlimages.png camlimages.core camlimages.graphics)
  (inline_tests)
  (preprocess
