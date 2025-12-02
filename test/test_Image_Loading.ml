@@ -9,7 +9,6 @@ let tests =
   >::: [
          ( "Test screen_to_image_coords - basic" >:: fun _ ->
            let result = screen_to_image_coords 100 100 50 50 in
-           let () = print_endline "test" in 
            assert_equal (50, 50) result;
            let result = screen_to_image_coords 0 0 50 50 in
            assert_equal (-50, -50) result;
