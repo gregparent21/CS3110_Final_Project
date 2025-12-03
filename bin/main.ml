@@ -242,10 +242,10 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           is_point_in_rect screen_x screen_y toolbar_x cut_y button_width
             button_height
         then (
-          Printf.printf
+          add_message "Press 'c' to cut. Press 'r' to reset.";
+          add_message
             "Cut tool selected! Click two opposite corners to a cut a square \
-             or three or more points to cut a polygon; Press 'c' to cut. Press \
-             'r' to reset.\n";
+             or three or more points to cut a polygon";
           flush stdout;
           Unix.sleepf 0.2;
           event_loop "cut")
@@ -253,11 +253,12 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           is_point_in_rect screen_x screen_y toolbar_x fill_y button_width
             button_height
         then (
-          Printf.printf
+          add_message
+            "Press 'c' to apply or 'r' to reset. Enter fill color (R G B) in \
+             terminal:";
+          add_message
             "Fill tool selected! Click two opposite corners to fill a square \
-             or three or more points to fill a polygon. Press 'c' to apply or \
-             'r' to reset.\n\
-            \ Enter fill color (R G B):";
+             or three or more points to fill a polygon.";
           let color_input = read_line () in
           let r, g, b =
             match String.split_on_char ' ' color_input with
@@ -273,10 +274,10 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           is_point_in_rect screen_x screen_y toolbar_x paste_y button_width
             button_height
         then (
+          add_message "Press 'p' to apply the paste and 'r' to reset.";
           add_message
             "Paste tool selected! Select the bottom left endpoint where you \
-             would like to paste the previous cut. Press 'p' to apply the \
-             paste and 'r' to reset.";
+             would like to paste the previous cut.";
           Unix.sleepf 0.2;
           event_loop "paste")
         else if
@@ -619,10 +620,6 @@ let () =
   draw_axes img_x img_y w h;
   draw_toolbar win_w win_h toolbar_x "";
   synchronize ();
-  (* Printf.printf "Click the 'Cut' button to select the cut tool, then click on
-     image to set \ polygon points.\n\ Click the 'Compress' button to select the
-     compression tool.\n"; Printf.printf "Press 'c' to apply cut, 'r' to reset
-     points, 'q' to quit.\n"; *)
   add_message "Welcome to CamlShop!";
 
   handle_buttons img_x img_y w h data toolbar_x
