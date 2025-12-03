@@ -134,11 +134,18 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
     (current_tool = "paste");
   moveto (toolbar_x + 5) (button_paste_y + button_h + 5);
 
-  (*Draw Compress button *)
-  let button_compress_y = win_h - 240 in
-  draw_button toolbar_x button_compress_y button_w button_h "Compress"
-    (current_tool = "compress");
-  moveto (toolbar_x + 5) (button_compress_y + button_h + 5);
+  (* Draw - / + side by side *)
+  let button_zoom_y = win_h - 240 in
+  let half_w = (button_w / 2) - 2 in
+
+  draw_button toolbar_x button_zoom_y half_w button_h "-"
+    (current_tool = "zoom_out");
+  moveto (toolbar_x + 5) (button_zoom_y + button_h + 5);
+
+  let zoom_in_x = toolbar_x + half_w + 4 in
+  draw_button zoom_in_x button_zoom_y half_w button_h "+"
+    (current_tool = "zoom_in");
+  moveto (zoom_in_x + 5) (button_zoom_y + button_h + 5);
 
   (* Draw Invert button *)
   let button_invert_y = win_h - 300 in
@@ -193,6 +200,14 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
   let fill_color = ref (Graphics.rgb 0 0 0) in
   let crop_points = ref [] in
   let crop_confirm_mode = ref false in
+  let zoom_level = ref 0 in
+  let zoom_base = ref (Array.map Array.copy !img_data) in
+
+  let rec apply_zoom n data =
+    if n = 0 then data
+    else if n > 0 then apply_zoom (n - 1) (enlarge data)
+    else (* n < 0 *) apply_zoom (n + 1) (shrink data)
+  in
 
   (* Remember original image + geometry for reset *)
   let original_data = Array.map Array.copy !img_data in
@@ -209,13 +224,14 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
   let fill_y = size_y () - 60 in
   let cut_y = size_y () - 120 in
   let paste_y = size_y () - 180 in
-  let compress_y = size_y () - 240 in
+  let zoom_y = size_y () - 240 in
   let invert_y = size_y () - 300 in
   let mirror_y = size_y () - 360 in
   let crop_y = size_y () - 420 in
   let pixelate_y = size_y () - 480 in
   let save_y = size_y () - 540 in
   let reset_y = size_y () - 600 in
+
   let prev_cut = ref (Array.make_matrix 0 0 0) in
   (* Track current image position and size, starting from initial *)
   let img_x_ref = ref img_x in
@@ -275,34 +291,76 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           Unix.sleepf 0.2;
           event_loop "paste")
         else if
-          is_point_in_rect screen_x screen_y toolbar_x compress_y button_width
+          is_point_in_rect screen_x screen_y toolbar_x zoom_y (button_width / 2)
             button_height
-        then (
-          add_message "Shrink tool selected! Shrinking image.";
+        then
+          if !zoom_level <= -3 then (
+            add_message "Cannot shrink further (zoom limit reached).";
+            Unix.sleepf 0.2;
+            event_loop current_tool)
+          else (
+            if !zoom_level = 0 then zoom_base := Array.map Array.copy !img_data;
 
-          img_data := shrink !img_data;
+            zoom_level := !zoom_level - 1;
 
-          (* update current width/height from the new data *)
-          let new_h = Array.length !img_data in
-          let new_w = if new_h = 0 then 0 else Array.length !img_data.(0) in
-          h_ref := new_h;
-          w_ref := new_w;
+            img_data := apply_zoom !zoom_level !zoom_base;
 
-          (* recenter image in the left area *)
-          let win_w = size_x () in
-          let win_h = size_y () in
-          img_x_ref := (toolbar_x - !w_ref) / 2;
-          img_y_ref := message_panel_h + ((win_h - message_panel_h - !h_ref) / 2);
+            let new_h = Array.length !img_data in
+            let new_w = if new_h = 0 then 0 else Array.length !img_data.(0) in
+            h_ref := new_h;
+            w_ref := new_w;
 
-          let new_img = Graphics.make_image !img_data in
-          clear_graph ();
-          draw_image new_img !img_x_ref !img_y_ref;
-          draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
-          draw_toolbar win_w win_h toolbar_x "compress";
-          draw_message_panel win_w message_panel_h;
-          synchronize ();
-          Unix.sleepf 0.2;
-          event_loop "compress")
+            let win_w = size_x () in
+            let win_h = size_y () in
+            img_x_ref := (toolbar_x - !w_ref) / 2;
+            img_y_ref :=
+              message_panel_h + ((win_h - message_panel_h - !h_ref) / 2);
+
+            let new_img = Graphics.make_image !img_data in
+            clear_graph ();
+            draw_image new_img !img_x_ref !img_y_ref;
+            draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+            draw_toolbar win_w win_h toolbar_x "zoom_out";
+            draw_message_panel win_w message_panel_h;
+            synchronize ();
+            Unix.sleepf 0.2;
+            event_loop "zoom_out")
+        else if
+          is_point_in_rect screen_x screen_y
+            (toolbar_x + (button_width / 2) + 4)
+            zoom_y (button_width / 2) button_height
+        then
+          if !zoom_level >= 3 then (
+            add_message "Cannot enlarge further (zoom limit reached).";
+            Unix.sleepf 0.2;
+            event_loop current_tool)
+          else (
+            if !zoom_level = 0 then zoom_base := Array.map Array.copy !img_data;
+
+            zoom_level := !zoom_level + 1;
+
+            img_data := apply_zoom !zoom_level !zoom_base;
+
+            let new_h = Array.length !img_data in
+            let new_w = if new_h = 0 then 0 else Array.length !img_data.(0) in
+            h_ref := new_h;
+            w_ref := new_w;
+
+            let win_w = size_x () in
+            let win_h = size_y () in
+            img_x_ref := (toolbar_x - !w_ref) / 2;
+            img_y_ref :=
+              message_panel_h + ((win_h - message_panel_h - !h_ref) / 2);
+
+            let new_img = Graphics.make_image !img_data in
+            clear_graph ();
+            draw_image new_img !img_x_ref !img_y_ref;
+            draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+            draw_toolbar win_w win_h toolbar_x "zoom_in";
+            draw_message_panel win_w message_panel_h;
+            synchronize ();
+            Unix.sleepf 0.2;
+            event_loop "zoom_in")
         else if
           is_point_in_rect screen_x screen_y toolbar_x invert_y button_width
             button_height
@@ -415,6 +473,8 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           h_ref := original_h;
           img_x_ref := original_img_x;
           img_y_ref := original_img_y;
+          zoom_level := 0;
+          zoom_base := Array.map Array.copy !img_data;
 
           let win_w = size_x () in
           let win_h = size_y () in
@@ -453,7 +513,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
         then (
           crop_points := (img_px, img_py) :: !crop_points;
 
-          (* Draw a small red dot at the clicked corner for feedback *)
+          (* Small red dot at corner*)
           set_color (rgb 255 0 0);
           fill_circle screen_x screen_y 4;
           synchronize ();
@@ -461,14 +521,13 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           if List.length !crop_points = 2 then (
             crop_confirm_mode := true;
 
-            (* get the two corners in image coords *)
             let p1, p2 =
               match !crop_points with
               | [ a; b ] -> (a, b)
               | _ -> failwith "impossible crop_points length"
             in
 
-            (* redraw image + rectangle preview (no actual crop yet) *)
+            (* redraw image + rectangle preview *)
             let win_w = size_x () in
             let win_h = size_y () in
             let img = Graphics.make_image !img_data in
@@ -478,7 +537,6 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
             draw_toolbar win_w win_h toolbar_x "crop";
 
-            (* convert image coords to screen coords for rectangle *)
             let sx1 = !img_x_ref + fst p1 in
             let sy1 = !img_y_ref + snd p1 in
             let sx2 = !img_x_ref + fst p2 in
@@ -506,7 +564,6 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
     else if key_pressed () then
       let key = read_key () in
       if key = 'c' && current_tool = "crop" && !crop_confirm_mode then (
-        (* we expect exactly two corners in crop_points *)
         match List.rev !crop_points with
         | p1 :: p2 :: _ ->
             img_data := crop !img_data p1 p2;
@@ -540,7 +597,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             add_message "Crop cancelled (invalid points).";
             event_loop "crop")
       else if key = 'r' && current_tool = "crop" && !crop_confirm_mode then (
-        (* cancel any pending crop selection *)
+        (* cancel any pending crop *)
         crop_points := [];
         crop_confirm_mode := false;
         let win_w = size_x () in

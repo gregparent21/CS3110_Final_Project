@@ -41,6 +41,10 @@ val shrink : int array array -> int array array
    averaging the RGB values of neighboring pixels. Reduces the size of an image
    by a factor of 2.*)
 
+val enlarge : int array array -> int array array
+(**[enlarge] enlarges a given image by a factor of 2 in each dimension using
+   nearest-neighbor.*)
+
 val replace_color :
   int array array -> int * int * int -> int * int * int -> int array array
 (** [replace_color data (src_r, src_g, src_b) (dst_r, dst_g, dst_b)] returns a

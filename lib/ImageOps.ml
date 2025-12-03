@@ -215,6 +215,25 @@ let shrink (data : int array array) : int array array =
   done;
   data'
 
+let enlarge (data : int array array) : int array array =
+  let h = Array.length data in
+  if h = 0 then [||]
+  else
+    let w = Array.length data.(0) in
+    let h' = h * 2 in
+    let w' = w * 2 in
+    let data' = Array.make_matrix h' w' 0 in
+    for x = 0 to h - 1 do
+      for y = 0 to w - 1 do
+        let p = data.(x).(y) in
+        data'.(x * 2).(y * 2) <- p;
+        data'.((x * 2) + 1).(y * 2) <- p;
+        data'.(x * 2).((y * 2) + 1) <- p;
+        data'.((x * 2) + 1).((y * 2) + 1) <- p
+      done
+    done;
+    data'
+
 let replace_color (data : int array array)
     ((src_r, src_g, src_b) : int * int * int)
     ((dst_r, dst_g, dst_b) : int * int * int) : int array array =
