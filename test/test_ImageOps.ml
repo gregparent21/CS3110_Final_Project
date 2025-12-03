@@ -276,6 +276,23 @@ let tests =
            let result = crop img (2, 1) (2, 1) in
            let expected = [| [| 22 |] |] in
            assert_equal expected result );
+         ( "Test array subtraction" >:: fun _ ->
+           let a = [| [| 5; 10; 15 |]; [| 20; 25; 30 |] |] in
+           let b = [| [| 1; 2; 3 |]; [| 4; 5; 6 |] |] in
+           let result = array_sub a b in
+           let expected = [| [| 4; 8; 12 |]; [| 16; 20; 24 |] |] in
+           assert_equal expected result );
+         ( "Test array subtraction with negatives" >:: fun _ ->
+           let a = [| [| 1; 2; 3 |]; [| 4; 5; 6 |] |] in
+           let b = [| [| 5; 10; 15 |]; [| 20; 25; 30 |] |] in
+           let result = array_sub a b in
+           let expected = [| [| -4; -8; -12 |]; [| -16; -20; -24 |] |] in
+           assert_equal expected result );
+         ( "Test array subtraction with failure" >:: fun _ ->
+           let a = [| [| 1; 2; 3; 4 |]; [| 3; 4; 5; 6 |] |] in
+           let b = [| [| 1; 2; 3 |]; [| 4; 5; 6 |] |] in
+           assert_raises (Failure "Array Subtraction Error!") (fun () ->
+               array_sub a b) );
        ]
 
 let _ = run_test_tt_main tests
