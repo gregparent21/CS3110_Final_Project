@@ -37,18 +37,17 @@ let tests =
            let expected = [| [| c 25; c 85 |]; [| c 25; c 85 |] |] in
            assert_equal expected result );
          ( "Test pixelate (factor 2)" >:: fun _ ->
-           let v r = Graphics.rgb r r r in
            let img =
              [|
-               [| v 10; v 20; v 50; v 60 |];
-               [| v 30; v 40; v 70; v 80 |];
-               [| v 10; v 20; v 50; v 60 |];
-               [| v 30; v 40; v 70; v 80 |];
+               [| c 10; c 20; c 50; c 60 |];
+               [| c 30; c 40; c 70; c 80 |];
+               [| c 10; c 20; c 50; c 60 |];
+               [| c 30; c 40; c 70; c 80 |];
              |]
            in
            let _ = pixelate img 2 in
-           let block1 = v 25 in
-           let block2 = v 65 in
+           let block1 = c 25 in
+           let block2 = c 65 in
            let expected =
              [|
                [| block1; block1; block2; block2 |];

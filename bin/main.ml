@@ -7,6 +7,7 @@ let message_panel_h = 100
 
 (* Message buffer: keep most recent lines at bottom panel *)
 let messages : string list ref = ref []
+let pixel_fact = ref 2
 
 let draw_message_panel win_w _panel_h =
   let panel_h = message_panel_h in
@@ -345,7 +346,9 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
         then (
           add_message "Pixelate tool selected! Pixelating image.";
 
-          img_data := pixelate !img_data 4;
+          img_data := pixelate !img_data !pixel_fact;
+
+          pixel_fact := !pixel_fact * !pixel_fact;
 
           (* update current width/height from the new data *)
           let new_h = Array.length !img_data in
