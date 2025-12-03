@@ -124,56 +124,6 @@ let cut_square (data : int array array) ((start_x, start_y) : int * int)
 let cut (data : int array array) (pairs : (int * int) list) =
   fill data pairs (Graphics.rgb 255 255 255)
 
-(* Currently supports only SIMPLE polygons. *)
-let cut_advanced (data : int array array) (pairs : (int * int) list) =
-  let n = List.length pairs in
-  if n < 3 then
-    raise (Failure "cut_advanced: polygon must have at least 3 vertices");
-  try
-    let segments =
-      List.mapi
-        (fun i pair -> (pair, List.nth pairs ((i + 1) mod List.length pairs)))
-        pairs
-    in
-    let height = Array.length data in
-    Array.mapi
-      (fun temp row ->
-        let y = height - temp - 1 in
-        Array.mapi
-          (fun x rgb ->
-            let crossings =
-              List.fold_left
-                (fun acc (s, e) ->
-                  if intersects_segment (x, y) s e then acc + 1 else acc)
-                0 segments
-            in
-            let on =
-              List.exists (fun (px, py) -> on_segment px py (x, y)) segments
-            in
-            if crossings mod 2 = 1 || List.mem (x, y) pairs || on then
-              Graphics.rgb 255 255 255
-            else rgb)
-          row)
-      data
-  with _ -> raise (Failure "cut_advanced: invalid coordinates")
-
-let paste (base : int array array) (overlay : int array array)
-    ((x, y) : int * int) : int array array =
-  let overlay_height = Array.length overlay in
-  let overlay_width = Array.length overlay.(0) in
-  let base_height = Array.length base in
-  let y = base_height - y - 1 in
-  Array.mapi
-    (fun temp row ->
-      let i = temp - 1 - base_height in
-      Array.mapi
-        (fun j pixel ->
-          if i >= y && i < y + overlay_height && j >= x && j < x + overlay_width
-          then overlay.(i - y).(j - x)
-          else pixel)
-        row)
-    base
-
 (**[r] takes a pixel point and returns that pixel's red value (0-255).*)
 let r p = (p lsr 16) land 0xFF
 
