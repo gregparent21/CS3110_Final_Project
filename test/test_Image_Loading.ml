@@ -1,6 +1,7 @@
 open OUnit2
 open FinalProject
 open ImageOps
+open ImageLoader
 
 let white = Graphics.rgb 255 255 255
 
@@ -40,6 +41,27 @@ let tests =
            assert_equal "RGB(0, 255, 0)" result;
            let result = pixel_to_string 128 128 128 in
            assert_equal "RGB(128, 128, 128)" result );
+         ( "Test ImageLoader loads RGB24 PNG" >:: fun _ ->
+           let img =
+             ImageLoader.load_image_raw "../data/testData/output_rgb24.png"
+           in
+           let w, h = ImageLoader.image_dimensions img in
+           assert_bool "width positive" (w > 0);
+           assert_bool "height positive" (h > 0) );
+         ( "Test ImageLoader loads RGBA32 PNG" >:: fun _ ->
+           let img =
+             ImageLoader.load_image_raw "../data/testData/output_rgba32.png"
+           in
+           let w, h = ImageLoader.image_dimensions img in
+           assert_bool "width positive" (w > 0);
+           assert_bool "height positive" (h > 0) );
+         ( "Test ImageLoader loads Index8 PNG" >:: fun _ ->
+           let img =
+             ImageLoader.load_image_raw "../data/testData/output_index8.png"
+           in
+           let w, h = ImageLoader.image_dimensions img in
+           assert_bool "width positive" (w > 0);
+           assert_bool "height positive" (h > 0) );
        ]
 
 let _ = run_test_tt_main tests

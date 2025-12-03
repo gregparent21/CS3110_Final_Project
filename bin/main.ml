@@ -451,22 +451,9 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
         then (
           add_message "Save tool selected! Enter filename (without extension): ";
           let filename = read_line () in
-          add_message "Choose format: (1) PNG or (2) JPG? ";
-          let format_choice = read_line () in
-          (match format_choice with
-          | "1" | "png" | "PNG" ->
-              FinalProject.FileSaver.save_image_to_png !img_data
-                (filename ^ ".png");
-              add_message (Printf.sprintf "Image saved as %s.png" filename)
-          | "2" | "jpg" | "JPG" | "jpeg" | "JPEG" ->
-              FinalProject.FileSaver.save_image_to_jpg !img_data
-                (filename ^ ".jpg");
-              add_message (Printf.sprintf "Image saved as %s.jpg" filename)
-          | _ ->
-              add_message "Invalid format. Defaulting to PNG.";
-              FinalProject.FileSaver.save_image_to_png !img_data
-                (filename ^ ".png");
-              add_message (Printf.sprintf "Image saved as %s.png" filename));
+          add_message "Saving as PNG...";
+          FinalProject.FileSaver.save_image_to_png !img_data (filename ^ ".png");
+          add_message (Printf.sprintf "Image saved as %s.png" filename);
           Unix.sleepf 0.2;
           event_loop "save")
         else if
