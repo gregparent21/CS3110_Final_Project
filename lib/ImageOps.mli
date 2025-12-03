@@ -13,17 +13,23 @@ val is_within_bounds : int -> int -> int -> int -> bool
 val pixel_to_string : int -> int -> int -> string
 (** [pixel_to_string r g b] formats an RGB pixel as a readable string. *)
 
-val intersects_segment : int * int -> int * int -> int * int -> bool
-(** [intersects_segment p1 p2 seg_start seg_end] checks if the ray towards
-    positive infinity x intersects the line segment from [p2] to [p3]. *)
-
 val cut_square : int array array -> int * int -> int * int -> int array array
 (** [cut_square img x y] removes the square with corners x and y from img. *)
 
-val cut_advanced : int array array -> (int * int) list -> int array array
+val cut : int array array -> (int * int) list -> int array array
 (** [cut_advanced img lst] removes the polygon defined by the line segments
     between each two conseuctive pairs of integers (wrapping the last pair to
     the first). *)
+
+val fill_square :
+  int array array -> int * int -> int * int -> int -> int array array
+(** [fill_square img x y color] fills the square with corners x and y in img
+    with color. *)
+
+val fill : int array array -> (int * int) list -> int -> int array array
+(** [fill img lst color] fills the polygon defined by the line segments between
+    each two conseuctive pairs of integers (wrapping the last pair to the first)
+    with color. *)
 
 val paste : int array array -> int array array -> int * int -> int array array
 (** [paste base overlay (x, y)] pastes the [overlay] image onto the [base] image

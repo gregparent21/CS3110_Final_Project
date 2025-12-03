@@ -67,24 +67,22 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
   let button_w = 90 in
   let button_h = 40 in
 
-  (* Draw Cut (simple) button *)
-  draw_button toolbar_x button_y button_w button_h "Cut"
-    (current_tool = "cut_simple");
+  draw_button toolbar_x button_y button_w button_h "Fill" (current_tool = "fill");
   moveto (toolbar_x + 5) (button_y + button_h + 5);
-  draw_string "Click to select simple cut (2 points)";
+  draw_string "Click to select fill";
 
   let button_adv_y = win_h - 120 in
-  draw_button toolbar_x button_adv_y button_w button_h "Cut Adv"
-    (current_tool = "cut_advanced");
+  draw_button toolbar_x button_adv_y button_w button_h "Cut"
+    (current_tool = "cut");
   moveto (toolbar_x + 5) (button_adv_y + button_h + 5);
-  draw_string "Click to select advanced cut (polygon)";
+  draw_string "Click to select cut";
 
   (* Draw Paste button *)
   let button_paste_y = win_h - 180 in
   draw_button toolbar_x button_paste_y button_w button_h "Paste"
     (current_tool = "paste");
   moveto (toolbar_x + 5) (button_paste_y + button_h + 5);
-  draw_string "Click to select paste tool";
+  draw_string "Click to select paste";
 
   (*Draw Compress button *)
   let button_compress_y = win_h - 240 in
@@ -141,15 +139,15 @@ let redraw img img_x img_y w h toolbar_x current_tool =
    accordingly.*)
 let handle_buttons img_x img_y w h img_data toolbar_x =
   let clicked_points = ref [] in
-
+  let fill_color = ref (Graphics.rgb 0 0 0) in
   let crop_points = ref [] in
   (*These lengths defined below are from [draw_toolbar]. Must accurately reflect
     any of the pre-defined values.*)
   let button_width = 90 in
   let button_height = 40 in
   (* Button Y positions must match draw_toolbar layout *)
-  let cut_y = size_y () - 60 in
-  let adv_y = size_y () - 120 in
+  let fill_y = size_y () - 60 in
+  let cut_y = size_y () - 120 in
   let paste_y = size_y () - 180 in
   let compress_y = size_y () - 240 in
   let invert_y = size_y () - 300 in
@@ -176,22 +174,32 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             button_height
         then (
           Printf.printf
-            "Cut (simple) tool selected! Click two opposite corners; the cut \
-             will be applied automatically after two points. Press 'r' to \
-             reset.\n";
+            "Cut tool selected! Click two opposite corners to a cut a square \
+             or three or more points to cut a polygon; Press 'c' to cut. Press \
+             'r' to reset.\n";
           flush stdout;
           Unix.sleepf 0.2;
-          event_loop "cut_simple")
+          event_loop "cut")
         else if
-          is_point_in_rect screen_x screen_y toolbar_x adv_y button_width
+          is_point_in_rect screen_x screen_y toolbar_x fill_y button_width
             button_height
         then (
           Printf.printf
-            "Cut (advanced) tool selected! Click multiple points to define a \
-             polygon. Press 'c' to apply or 'r' to reset.\n";
+            "Fill tool selected! Click two opposite corners to fill a square \
+             or three or more points to fill a polygon. Press 'c' to apply or \
+             'r' to reset.\n\
+            \ Enter fill color (R G B):";
+          let color_input = read_line () in
+          let r, g, b =
+            match String.split_on_char ' ' color_input with
+            | [ r_str; g_str; b_str ] ->
+                (int_of_string r_str, int_of_string g_str, int_of_string b_str)
+            | _ -> (0, 0, 0)
+          in
+          fill_color := Graphics.rgb r g b;
           flush stdout;
           Unix.sleepf 0.2;
-          event_loop "cut_advanced")
+          event_loop "fill")
         else if
           is_point_in_rect screen_x screen_y toolbar_x paste_y button_width
             button_height
@@ -346,9 +354,8 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           screen_to_image_coords screen_x screen_y !img_x_ref !img_y_ref
         in
         if
-          (current_tool = "cut_simple"
-          || current_tool = "cut_advanced"
-          || current_tool = "paste")
+          (current_tool = "cut" || current_tool = "fill"
+         || current_tool = "paste")
           && is_within_bounds img_px img_py cur_w cur_h
         then (
           clicked_points := (img_px, img_py) :: !clicked_points;
@@ -356,7 +363,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             (List.length !clicked_points);
           flush stdout;
           (* If simple cut, apply automatically when two points collected *)
-          if current_tool = "cut_simple" && List.length !clicked_points >= 2
+          if current_tool = "cut_square" && List.length !clicked_points >= 2
           then (
             let pts = List.rev !clicked_points in
             let p1 = List.nth pts 0 in
@@ -381,7 +388,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             synchronize ();
 
             clicked_points := [];
-            Printf.printf "Simple cut applied.\n";
+            Printf.printf "Square cut applied.\n";
             flush stdout;
             Unix.sleepf 0.2;
             event_loop "")
@@ -441,21 +448,29 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           event_loop current_tool)
     else if key_pressed () then
       let key = read_key () in
-      if
-        key = 'c'
-        && current_tool = "cut_advanced"
-        && List.length !clicked_points > 2
+      if key = 'c' && current_tool = "cut" && List.length !clicked_points >= 2
       then (
-        let cut_data = cut_advanced !img_data (List.rev !clicked_points) in
-        prev_cut := array_sub !img_data cut_data;
-        img_data := cut_data;
-        Printf.printf "Advanced cut applied with points:\n";
-        List.iter
-          (fun (x, y) -> Printf.printf "(%d, %d)\n" x y)
-          (List.rev !clicked_points);
-        flush stdout;
+        if List.length !clicked_points = 2 then (
+          let pts = List.rev !clicked_points in
+          let p1 = List.nth pts 0 in
+          let p2 = List.nth pts 1 in
+          let cut_data = cut_square !img_data p1 p2 in
+          prev_cut := array_sub !img_data cut_data;
+          img_data := cut_data;
+          Printf.printf "Applying square cut.\n")
+        else begin
+          let cut_data = cut !img_data (List.rev !clicked_points) in
+          prev_cut := array_sub !img_data cut_data;
+          img_data := cut_data;
+          Printf.printf "Cut applied with points:\n";
+          List.iter
+            (fun (x, y) -> Printf.printf "(%d, %d)\n" x y)
+            (List.rev !clicked_points);
+          Printf.printf "\n";
+          flush stdout
+        end;
 
-        let new_img = Graphics.make_image cut_data in
+        let new_img = Graphics.make_image !img_data in
         redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x
           current_tool;
 
