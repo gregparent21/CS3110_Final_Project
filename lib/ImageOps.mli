@@ -36,10 +36,10 @@ val paste : int array array -> int array array -> int * int -> int array array
     with the bottom-left corner of the overlay at position [(x, y)] in the base
     image. *)
 
-val shrink : int array array -> int -> int array array
+val shrink : int array array -> int array array
 (**[shrink] "compresses" a given image by reducing its total pixel count and
    averaging the RGB values of neighboring pixels. Reduces the size of an image
-   by an user specified factor.*)
+   by a factor of 2.*)
 
 val replace_color :
   int array array -> int * int * int -> int * int * int -> int array array
@@ -65,7 +65,7 @@ val array_sub : int array array -> int array array -> int array array
 
 val pixelate : int array array -> int -> int array array
 (**[pixelate] returns a new image that is a pixelated version of the original
-   image. It pixelates the image based on a user given factor. As an example, a
+   image. It pixelates the image based on a pixelation factor. As an example, a
    pixelation factor of 2 will average out the RGB value of a 2x2 area and set
    all pixels in that area to that RGB value. This will repeat throughout the
    entire image.*)

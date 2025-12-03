@@ -4,6 +4,9 @@ open ImageOps
 
 let white = Graphics.rgb 255 255 255
 
+(*Helper function used to make a grey-scaled pixel*)
+let c v = Graphics.rgb v v v
+
 let tests =
   "ImageOps Tests"
   >::: [
@@ -12,14 +15,26 @@ let tests =
            let result = flip_horizontal img in
            let expected = [| [| 3; 2; 1 |]; [| 6; 5; 4 |] |] in
            assert_equal expected result );
-         ( "Test shrink (factor 2)" >:: fun _ ->
+         ( "Test shrink 2x2 -> 1x1" >:: fun _ ->
            let a = Graphics.rgb 10 20 30 in
            let b = Graphics.rgb 20 30 40 in
            let c = Graphics.rgb 30 40 50 in
            let d = Graphics.rgb 40 50 60 in
            let img = [| [| a; b |]; [| c; d |] |] in
-           let result = shrink img 2 in
+           let result = shrink img in
            let expected = [| [| Graphics.rgb 25 35 45 |] |] in
+           assert_equal expected result );
+         ( "Test shrink 4x4 -> 2x2" >:: fun _ ->
+           let img =
+             [|
+               [| c 10; c 20; c 70; c 80 |];
+               [| c 30; c 40; c 90; c 100 |];
+               [| c 10; c 20; c 70; c 80 |];
+               [| c 30; c 40; c 90; c 100 |];
+             |]
+           in
+           let result = shrink img in
+           let expected = [| [| c 25; c 85 |]; [| c 25; c 85 |] |] in
            assert_equal expected result );
          ( "Test pixelate (factor 2)" >:: fun _ ->
            let v r = Graphics.rgb r r r in
