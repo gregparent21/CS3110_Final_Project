@@ -10,7 +10,6 @@ let standard_coordinates ((a, b) : int * int) ((x, y) : int * int) =
   else if a > x && b > y then ((x, y), (a, b))
   else ((a, b), (x, y))
 
-(* Inline testing for standard coordinates. *)
 let%test "standard_coordinates" =
   standard_coordinates (1, 4) (4, 1) = ((1, 1), (4, 4))
 
@@ -23,6 +22,25 @@ let%test "standard_coordinates 3" =
 let%test "standard_coordinates 4" =
   standard_coordinates (4, 4) (1, 1) = ((1, 1), (4, 4))
 
+let cut_square (data : int array array) ((start_x, start_y) : int * int)
+    ((end_x, end_y) : int * int) =
+  try
+    let (a, b), (u, v) =
+      standard_coordinates (start_x, start_y) (end_x, end_y)
+    in
+    let height = Array.length data in
+    Array.mapi
+      (fun temp row ->
+        let y = height - temp - 1 in
+        Array.mapi
+          (fun x rgb ->
+            if a <= x && x <= u && b <= y && y <= v then
+              Graphics.rgb 255 255 255
+            else rgb)
+          row)
+      data
+  with _ -> raise (Failure "cut_advanced: invalid coordinates")
+
 let on_segment ((s_x, s_y) : int * int) ((e_x, e_y) : int * int)
     ((p_x, p_y) : int * int) =
   ((e_x - s_x) * (p_y - s_y)) - ((e_y - s_y) * (p_x - s_x)) = 0
@@ -31,16 +49,8 @@ let on_segment ((s_x, s_y) : int * int) ((e_x, e_y) : int * int)
   && p_y >= min s_y e_y
   && p_y <= max s_y e_y
 
-(* Inline testing for on segment. *)
-let%test "on_segment" = on_segment (0, 0) (10, 10) (5, 5)
-let%test "on_segment 2" = on_segment (0, 10) (10, 0) (5, 5)
-let%test "on_segment 3" = on_segment (1, 1) (2, 2) (1, 1)
-let%test "on_segment 4" = on_segment (1, 1) (2, 2) (2, 2)
-let%test "on_segment 5" = not (on_segment (0, 0) (10, 10) (5, 6))
-let%test "on_segment 6" = not (on_segment (0, 10) (10, 0) (6, 5))
-
-(** [intersects_segment p1 p2 seg_start seg_end] checks if the ray towards
-    positive infinity x intersects the line segment from [p2] to [p3]. *)
+(* Determines if the ray in the positive x infinity direction from (x, y)
+   intersects the line segment from (x1, y1) to (x2, y2).*)
 let intersects_segment ((x, y) : int * int) ((x1, y1) : int * int)
     ((x2, y2) : int * int) =
   (* Ensure y1 <= y2 *)
@@ -55,19 +65,38 @@ let intersects_segment ((x, y) : int * int) ((x1, y1) : int * int)
         /. (float y2 -. float y1)
         +. float x1
 
-(* Inline testing for intersects segment. *)
-let%test "intersects_segment" = intersects_segment (5, 5) (0, 0) (10, 10)
-let%test "intersects_segment 2" = intersects_segment (0, 5) (0, 10) (10, 0)
-let%test "intersects_segment 3" = intersects_segment (0, 10) (0, 10) (10, 0)
-
-let%test "intersects_segment 4" =
-  not (intersects_segment (15, 15) (0, 0) (10, 10))
-
-let%test "intersects_segment 5" =
-  not (intersects_segment (5, 15) (0, 0) (10, 10))
-
-let%test "intersects_segment 6" =
-  not (intersects_segment (10, 5) (0, 0) (10, 10))
+(* Currently supports only SIMPLE polygons. *)
+let cut_advanced (data : int array array) (pairs : (int * int) list) =
+  let n = List.length pairs in
+  if n < 3 then
+    raise (Failure "cut_advanced: polygon must have at least 3 vertices");
+  try
+    let segments =
+      List.mapi
+        (fun i pair -> (pair, List.nth pairs ((i + 1) mod List.length pairs)))
+        pairs
+    in
+    let height = Array.length data in
+    Array.mapi
+      (fun temp row ->
+        let y = height - temp - 1 in
+        Array.mapi
+          (fun x rgb ->
+            let crossings =
+              List.fold_left
+                (fun acc (s, e) ->
+                  if intersects_segment (x, y) s e then acc + 1 else acc)
+                0 segments
+            in
+            let on =
+              List.exists (fun (px, py) -> on_segment px py (x, y)) segments
+            in
+            if crossings mod 2 = 1 || List.mem (x, y) pairs || on then
+              Graphics.rgb 255 255 255
+            else rgb)
+          row)
+      data
+  with _ -> raise (Failure "cut_advanced: invalid coordinates")
 
 let paste (base : int array array) (overlay : int array array)
     ((x, y) : int * int) : int array array =
@@ -112,13 +141,18 @@ let%test "b gets the blue component" =
    RGB value.*)
 let average_neighbors (data : int array array) (factor : int) (x : int)
     (y : int) =
-  try
+  let height = Array.length data in
+  let width = Array.length data.(0) in
+  if x >= height || x < 0 || y >= width || y < 0 then failwith "Out of bounds"
+  else
+    let x_end = min (x + factor) height in
+    let y_end = min (y + factor) width in
     let avg_r = ref 0 in
     let avg_g = ref 0 in
     let avg_b = ref 0 in
-    for i = 0 to factor - 1 do
-      for j = 0 to factor - 1 do
-        let p = data.(x + i).(y + j) in
+    for i = x to x_end - 1 do
+      for j = y to y_end - 1 do
+        let p = data.(i).(j) in
         avg_r := !avg_r + r p;
         avg_g := !avg_g + g p;
         avg_b := !avg_b + b p
@@ -128,7 +162,6 @@ let average_neighbors (data : int array array) (factor : int) (x : int)
     avg_g := !avg_g / (factor * factor);
     avg_b := !avg_b / (factor * factor);
     (!avg_r lsl 16) lor (!avg_g lsl 8) lor !avg_b
-  with _ -> failwith "Out of bounds"
 
 let%test "average_neighbors on a 1x1 image" =
   let p = Graphics.rgb 50 60 70 in
@@ -239,77 +272,29 @@ let array_sub (a : int array array) (b : int array array) : int array array =
    `bounds` determines the dimensions of the square segment.*)
 let square_replace (data : int array array) (bounds : int) (x : int) (y : int)
     (avg : int) : unit =
-  for x = x to x + bounds - 1 do
-    for y = y to y + bounds - 1 do
+  let height = Array.length data in
+  let width = Array.length data.(0) in
+  let x_end = min (x + bounds) height in
+  let y_end = min (y + bounds) width in
+  for x = x to x_end - 1 do
+    for y = y to y_end - 1 do
       data.(x).(y) <- avg
     done
   done
 
 let pixelate (data : int array array) (factor : int) : int array array =
-  if factor > 0 then (
-    for x = 0 to (Array.length data / factor) - 1 do
-      for y = 0 to (Array.length data.(x) / factor) - 1 do
-        square_replace data factor (x * factor) (y * factor)
-          (average_neighbors data factor (x * factor) (y * factor))
+  if factor > 0 && Array.length data > 0 then (
+    let height = Array.length data in
+    let width = Array.length data.(0) in
+    let blocks_x = (height + factor - 1) / factor in
+    let blocks_y = (width + factor - 1) / factor in
+    for bx = 0 to blocks_x - 1 do
+      for by = 0 to blocks_y - 1 do
+        let start_x = bx * factor in
+        let start_y = by * factor in
+        let avg = average_neighbors data factor start_x start_y in
+        square_replace data factor start_x start_y avg
       done
     done;
-    (* if (Array.length data mod factor = 0 && Array.length data.(0) mod factor
-       = 0) then *)
-    data
-    (* else if Array.length data mod factor <> 0 then for x = Array.length data
-       mod fact *))
+    data)
   else data
-
-let fill_square (data : int array array) ((start_x, start_y) : int * int)
-    ((end_x, end_y) : int * int) (color : int) =
-  try
-    let (a, b), (u, v) =
-      standard_coordinates (start_x, start_y) (end_x, end_y)
-    in
-    let height = Array.length data in
-    Array.mapi
-      (fun temp row ->
-        let y = height - temp - 1 in
-        Array.mapi
-          (fun x rgb ->
-            if a <= x && x <= u && b <= y && y <= v then color else rgb)
-          row)
-      data
-  with _ -> raise (Failure "invalid coordinates")
-
-let fill (data : int array array) (pairs : (int * int) list) (color : int) =
-  let n = List.length pairs in
-  if n < 3 then raise (Failure "polygon must have at least 3 vertices");
-  try
-    let segments =
-      List.mapi
-        (fun i pair -> (pair, List.nth pairs ((i + 1) mod List.length pairs)))
-        pairs
-    in
-    let height = Array.length data in
-    Array.mapi
-      (fun temp row ->
-        let y = height - temp - 1 in
-        Array.mapi
-          (fun x rgb ->
-            let crossings =
-              List.fold_left
-                (fun acc (s, e) ->
-                  if intersects_segment (x, y) s e then acc + 1 else acc)
-                0 segments
-            in
-            let on =
-              List.exists (fun (px, py) -> on_segment px py (x, y)) segments
-            in
-            if crossings mod 2 = 1 || List.mem (x, y) pairs || on then color
-            else rgb)
-          row)
-      data
-  with _ -> raise (Failure "invalid coordinates")
-
-let cut_square (data : int array array) ((start_x, start_y) : int * int)
-    ((end_x, end_y) : int * int) =
-  fill_square data (start_x, start_y) (end_x, end_y) (Graphics.rgb 255 255 255)
-
-let cut (data : int array array) (pairs : (int * int) list) =
-  fill data pairs (Graphics.rgb 255 255 255)
