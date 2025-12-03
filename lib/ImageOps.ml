@@ -124,6 +124,24 @@ let cut_square (data : int array array) ((start_x, start_y) : int * int)
 let cut (data : int array array) (pairs : (int * int) list) =
   fill data pairs (Graphics.rgb 255 255 255)
 
+let paste (data : int array array) (image : int array array)
+    ((start_x, start_y) : int * int) =
+  let image_height = Array.length image in
+  let image_width = Array.length image.(0) in
+  let data_height = Array.length data in
+  let data_width = Array.length data.(0) in
+  if
+    start_x < 0 || start_y < 0
+    || start_x + image_width > data_width
+    || start_y + image_height > data_height
+  then raise (Failure "Paste operation out of bounds");
+  for i = 0 to image_height - 1 do
+    for j = 0 to image_width - 1 do
+      data.(start_y + i).(start_x + j) <- image.(i).(j)
+    done
+  done;
+  data
+
 (**[r] takes a pixel point and returns that pixel's red value (0-255).*)
 let r p = (p lsr 16) land 0xFF
 
