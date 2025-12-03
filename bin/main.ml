@@ -122,69 +122,59 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
 
   draw_button toolbar_x button_y button_w button_h "Fill" (current_tool = "fill");
   moveto (toolbar_x + 5) (button_y + button_h + 5);
-  draw_string "Click to select fill";
 
   let button_adv_y = win_h - 120 in
   draw_button toolbar_x button_adv_y button_w button_h "Cut"
     (current_tool = "cut");
   moveto (toolbar_x + 5) (button_adv_y + button_h + 5);
-  draw_string "Click to select cut";
 
   (* Draw Paste button *)
   let button_paste_y = win_h - 180 in
   draw_button toolbar_x button_paste_y button_w button_h "Paste"
     (current_tool = "paste");
   moveto (toolbar_x + 5) (button_paste_y + button_h + 5);
-  draw_string "Click to select paste";
 
   (*Draw Compress button *)
   let button_compress_y = win_h - 240 in
   draw_button toolbar_x button_compress_y button_w button_h "Compress"
     (current_tool = "compress");
   moveto (toolbar_x + 5) (button_compress_y + button_h + 5);
-  draw_string "Click to compress image";
 
   (* Draw Invert button *)
   let button_invert_y = win_h - 300 in
-  draw_button toolbar_x button_invert_y button_w button_h "invert"
+  draw_button toolbar_x button_invert_y button_w button_h "Invert"
     (current_tool = "invert");
   moveto (toolbar_x + 5) (button_invert_y + button_h + 5);
-  draw_string "Click to invert colors";
 
   (* Draw Mirror *)
   let button_mirror_y = win_h - 360 in
-  draw_button toolbar_x button_mirror_y button_w button_h "mirror"
+  draw_button toolbar_x button_mirror_y button_w button_h "Mirror"
     (current_tool = "mirror");
   moveto (toolbar_x + 5) (button_mirror_y + button_h + 5);
-  draw_string "Click to mirror image";
 
   (* Draw Crop *)
   let button_crop_y = win_h - 420 in
   draw_button toolbar_x button_crop_y button_w button_h "Crop"
     (current_tool = "crop");
   moveto (toolbar_x + 5) (button_crop_y + button_h + 5);
-  draw_string "Click to crop";
 
   (* Draw Pixelate *)
   let button_pixelate = win_h - 480 in
-  draw_button toolbar_x button_pixelate button_w button_h "pixelate"
+  draw_button toolbar_x button_pixelate button_w button_h "Pixelate"
     (current_tool = "pixelate");
   moveto (toolbar_x + 5) (button_pixelate + button_h + 5);
-  draw_string "Click to pixelate";
 
   (* Draw Save button *)
   let button_save_y = win_h - 540 in
   draw_button toolbar_x button_save_y button_w button_h "Save"
     (current_tool = "save");
   moveto (toolbar_x + 5) (button_save_y + button_h + 5);
-  draw_string "Click to save image";
 
   (* Draw Reset button *)
   let button_reset_y = win_h - 600 in
   draw_button toolbar_x button_reset_y button_w button_h "Reset"
     (current_tool = "reset");
-  moveto (toolbar_x + 5) (button_reset_y + button_h + 5);
-  draw_string "Reset to original image"
+  moveto (toolbar_x + 5) (button_reset_y + button_h + 5)
 
 (** [redraw img img_x img_y w h toolbar_x current_tool] is a helper function
     that redraws the image after applying the cut. *)
@@ -202,6 +192,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
   let clicked_points = ref [] in
   let fill_color = ref (Graphics.rgb 0 0 0) in
   let crop_points = ref [] in
+  let crop_confirm_mode = ref false in
 
   (* Remember original image + geometry for reset *)
   let original_data = Array.map Array.copy !img_data in
@@ -237,7 +228,10 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
     let cur_w = !w_ref in
     let cur_h = !h_ref in
     if button_down () then
-      if screen_x >= toolbar_x then
+      if !crop_confirm_mode then (
+        Unix.sleepf 0.2;
+        event_loop current_tool)
+      else if screen_x >= toolbar_x then
         if
           is_point_in_rect screen_x screen_y toolbar_x cut_y button_width
             button_height
@@ -454,20 +448,67 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           Unix.sleepf 0.2;
           event_loop current_tool)
         else if
-          current_tool = "crop" && is_within_bounds img_px img_py cur_w cur_h
+          current_tool = "crop" && (not !crop_confirm_mode)
+          && is_within_bounds img_px img_py cur_w cur_h
         then (
           crop_points := (img_px, img_py) :: !crop_points;
-          add_message
-            (Printf.sprintf "Crop corner: (%d, %d). Total: %d/2" img_px img_py
-               (List.length !crop_points));
+
+          (* Draw a small red dot at the clicked corner for feedback *)
+          set_color (rgb 255 0 0);
+          fill_circle screen_x screen_y 4;
+          synchronize ();
 
           if List.length !crop_points = 2 then (
+            crop_confirm_mode := true;
+
+            (* get the two corners in image coords *)
             let p1, p2 =
               match !crop_points with
               | [ a; b ] -> (a, b)
               | _ -> failwith "impossible crop_points length"
             in
 
+            (* redraw image + rectangle preview (no actual crop yet) *)
+            let win_w = size_x () in
+            let win_h = size_y () in
+            let img = Graphics.make_image !img_data in
+
+            clear_graph ();
+            draw_image img !img_x_ref !img_y_ref;
+            draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+            draw_toolbar win_w win_h toolbar_x "crop";
+
+            (* convert image coords to screen coords for rectangle *)
+            let sx1 = !img_x_ref + fst p1 in
+            let sy1 = !img_y_ref + snd p1 in
+            let sx2 = !img_x_ref + fst p2 in
+            let sy2 = !img_y_ref + snd p2 in
+            let left = min sx1 sx2 in
+            let right = max sx1 sx2 in
+            let bottom = min sy1 sy2 in
+            let top = max sy1 sy2 in
+
+            set_color (rgb 255 0 0);
+            draw_rect left bottom (right - left) (top - bottom);
+
+            draw_message_panel win_w message_panel_h;
+            add_message "Press 'c' to confirm crop, 'r' to cancel.";
+            synchronize ();
+
+            event_loop "crop")
+          else (
+            Unix.sleepf 0.2;
+            event_loop current_tool))
+        else (
+          add_message "No tool selected or click outside bounds";
+          Unix.sleepf 0.2;
+          event_loop current_tool)
+    else if key_pressed () then
+      let key = read_key () in
+      if key = 'c' && current_tool = "crop" && !crop_confirm_mode then (
+        (* we expect exactly two corners in crop_points *)
+        match List.rev !crop_points with
+        | p1 :: p2 :: _ ->
             img_data := crop !img_data p1 p2;
 
             let new_h = Array.length !img_data in
@@ -482,7 +523,6 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
               message_panel_h + ((win_h - message_panel_h - !h_ref) / 2);
 
             let new_img = Graphics.make_image !img_data in
-
             clear_graph ();
             draw_image new_img !img_x_ref !img_y_ref;
             draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
@@ -491,18 +531,31 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             synchronize ();
 
             crop_points := [];
+            crop_confirm_mode := false;
             add_message "Crop applied.";
-            event_loop "")
-          else (
-            Unix.sleepf 0.2;
-            event_loop current_tool))
-        else (
-          add_message "No tool selected or click outside bounds";
-          Unix.sleepf 0.2;
-          event_loop current_tool)
-    else if key_pressed () then
-      let key = read_key () in
-      if key = 'c' && current_tool = "cut" && List.length !clicked_points >= 2
+            event_loop ""
+        | _ ->
+            crop_points := [];
+            crop_confirm_mode := false;
+            add_message "Crop cancelled (invalid points).";
+            event_loop "crop")
+      else if key = 'r' && current_tool = "crop" && !crop_confirm_mode then (
+        (* cancel any pending crop selection *)
+        crop_points := [];
+        crop_confirm_mode := false;
+        let win_w = size_x () in
+        let win_h = size_y () in
+        let img = Graphics.make_image !img_data in
+        clear_graph ();
+        draw_image img !img_x_ref !img_y_ref;
+        draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+        draw_toolbar win_w win_h toolbar_x "crop";
+        draw_message_panel win_w message_panel_h;
+        add_message "Crop cancelled.";
+        synchronize ();
+        event_loop "crop")
+      else if
+        key = 'c' && current_tool = "cut" && List.length !clicked_points >= 2
       then (
         if List.length !clicked_points = 2 then (
           let pts = List.rev !clicked_points in
