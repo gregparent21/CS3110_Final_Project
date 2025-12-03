@@ -413,40 +413,8 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             (Printf.sprintf "Point added: (%d, %d). Total: %d" img_px img_py
                (List.length !clicked_points));
           (* If simple cut, apply automatically when two points collected *)
-          if current_tool = "cut_square" && List.length !clicked_points >= 2
-          then (
-            let pts = List.rev !clicked_points in
-            let p1 = List.nth pts 0 in
-            let p2 = List.nth pts 1 in
-            let cut_data = cut_square !img_data p1 p2 in
-            prev_cut := array_sub !img_data cut_data;
-            img_data := cut_data;
-
-            (* update dimensions and recenter *)
-            let new_h = Array.length !img_data in
-            let new_w = if new_h = 0 then 0 else Array.length !img_data.(0) in
-            h_ref := new_h;
-            w_ref := new_w;
-            img_x_ref := (toolbar_x - !w_ref) / 2;
-            img_y_ref :=
-              message_panel_h + ((size_y () - message_panel_h - !h_ref) / 2);
-
-            let new_img = Graphics.make_image !img_data in
-            clear_graph ();
-            draw_image new_img !img_x_ref !img_y_ref;
-            draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
-            draw_toolbar (size_x ()) (size_y ()) toolbar_x "";
-            draw_message_panel (size_x ()) message_panel_h;
-            synchronize ();
-
-            clicked_points := [];
-            Printf.printf "Square cut applied.\n";
-            flush stdout;
-            Unix.sleepf 0.2;
-            event_loop "")
-          else (
-            Unix.sleepf 0.2;
-            event_loop current_tool))
+          Unix.sleepf 0.2;
+          event_loop current_tool)
         else if
           current_tool = "crop" && is_within_bounds img_px img_py cur_w cur_h
         then (
@@ -510,16 +478,16 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           let cut_data = cut_square !img_data p1 p2 in
           prev_cut := array_sub !img_data cut_data;
           img_data := cut_data;
-          Printf.printf "Applying square cut.\n")
+          add_message "Applying square cut.\n")
         else begin
           let cut_data = cut !img_data (List.rev !clicked_points) in
           prev_cut := array_sub !img_data cut_data;
           img_data := cut_data;
-          Printf.printf "Cut applied with points:\n";
+          add_message "Cut applied with points:\n";
           List.iter
-            (fun (x, y) -> Printf.printf "(%d, %d)\n" x y)
+            (fun (x, y) ->
+              add_message ("(" ^ string_of_int x ^ ", " ^ string_of_int y ^ ")"))
             (List.rev !clicked_points);
-          Printf.printf "\n";
           flush stdout
         end;
 
