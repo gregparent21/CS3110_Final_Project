@@ -147,24 +147,16 @@ let average_neighbors (data : int array array) (factor : int) (x : int)
     (!avg_r lsl 16) lor (!avg_g lsl 8) lor !avg_b
   with _ -> failwith "Out of bounds"
 
-let shrink (data : int array array) (factor : int) : int array array =
-  if factor > 0 then
-    try
-      let data' =
-        Array.make_matrix
-          (Array.length data / factor)
-          (Array.length data.(0) / factor)
-          0
-      in
-      for x = 0 to (Array.length data / factor) - 1 do
-        for y = 0 to (Array.length data.(0) / factor) - 1 do
-          data'.(x).(y) <-
-            average_neighbors data factor (x * factor) (y * factor)
-        done
-      done;
-      data'
-    with _ -> failwith "Out of bounds"
-  else failwith "Invalid input"
+let shrink (data : int array array) : int array array =
+  let data' =
+    Array.make_matrix (Array.length data / 2) (Array.length data.(0) / 2) 0
+  in
+  for x = 0 to (Array.length data / 2) - 1 do
+    for y = 0 to (Array.length data.(0) / 2) - 1 do
+      data'.(x).(y) <- average_neighbors data 2 (x * 2) (y * 2)
+    done
+  done;
+  data'
 
 let replace_color (data : int array array)
     ((src_r, src_g, src_b) : int * int * int)
