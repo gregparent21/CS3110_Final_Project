@@ -3,18 +3,18 @@ open Graphics
 (** Load an image file and convert it into a [Graphics.image] with its width and
     height. Supports multiple on-disk formats (RGB24, RGBA32, Index8/16, CMYK)
     by normalizing to Rgb24 then creating a Graphics.image. *)
+let cmyk_pixel_to_rgb (px : Color.cmyk) : Color.rgb =
+  let c = float_of_int px.Color.c /. 255.0
+  and m = float_of_int px.Color.m /. 255.0
+  and y = float_of_int px.Color.y /. 255.0
+  and k = float_of_int px.Color.k /. 255.0 in
+  let conv comp ink = int_of_float (255.0 *. (1.0 -. comp) *. (1.0 -. ink)) in
+  { Color.r = conv c k; Color.g = conv m k; Color.b = conv y k }
+
+
 let graphics_image_of_file (path : string) : Graphics.image * int * int =
   Printf.eprintf "Loading image from: %s\n%!" path;
   let raw = Images.load path [] in
-
-  let cmyk_pixel_to_rgb (px : Color.cmyk) : Color.rgb =
-    let c = float_of_int px.Color.c /. 255.0
-    and m = float_of_int px.Color.m /. 255.0
-    and y = float_of_int px.Color.y /. 255.0
-    and k = float_of_int px.Color.k /. 255.0 in
-    let conv comp ink = int_of_float (255.0 *. (1.0 -. comp) *. (1.0 -. ink)) in
-    { Color.r = conv c k; Color.g = conv m k; Color.b = conv y k }
-  in
 
   let rgb =
     match raw with
@@ -55,3 +55,17 @@ let graphics_image_of_file (path : string) : Graphics.image * int * int =
   done;
 
   (Graphics.make_image data, w, h)
+
+(* Inline tests for CMYK -> RGB conversion logic *)
+
+let%test "cmyk_white_to_rgb_white" =
+  let rgb = cmyk_pixel_to_rgb { Color.c = 0; m = 0; y = 0; k = 0 } in
+  rgb.Color.r = 255 && rgb.Color.g = 255 && rgb.Color.b = 255
+
+let%test "cmyk_black_to_rgb_black" =
+  let rgb = cmyk_pixel_to_rgb { Color.c = 0; m = 0; y = 0; k = 255 } in
+  rgb.Color.r = 0 && rgb.Color.g = 0 && rgb.Color.b = 0
+
+let%test "cmyk_cyan_to_rgb" =
+  let rgb = cmyk_pixel_to_rgb { Color.c = 255; m = 0; y = 0; k = 0 } in
+  rgb.Color.r = 0 && rgb.Color.g = 255 && rgb.Color.b = 255
