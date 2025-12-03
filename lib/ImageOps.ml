@@ -10,6 +10,7 @@ let standard_coordinates ((a, b) : int * int) ((x, y) : int * int) =
   else if a > x && b > y then ((x, y), (a, b))
   else ((a, b), (x, y))
 
+(* Inline testing for standard coordinates. *)
 let%test "standard_coordinates" =
   standard_coordinates (1, 4) (4, 1) = ((1, 1), (4, 4))
 
@@ -49,6 +50,14 @@ let on_segment ((s_x, s_y) : int * int) ((e_x, e_y) : int * int)
   && p_y >= min s_y e_y
   && p_y <= max s_y e_y
 
+(* Inline testing for on segment. *)
+let%test "on_segment" = on_segment (0, 0) (10, 10) (5, 5)
+let%test "on_segment 2" = on_segment (0, 10) (10, 0) (5, 5)
+let%test "on_segment 3" = on_segment (1, 1) (2, 2) (1, 1)
+let%test "on_segment 4" = on_segment (1, 1) (2, 2) (2, 2)
+let%test "on_segment 5" = not (on_segment (0, 0) (10, 10) (5, 6))
+let%test "on_segment 6" = not (on_segment (0, 10) (10, 0) (6, 5))
+
 (* Determines if the ray in the positive x infinity direction from (x, y)
    intersects the line segment from (x1, y1) to (x2, y2).*)
 let intersects_segment ((x, y) : int * int) ((x1, y1) : int * int)
@@ -64,6 +73,74 @@ let intersects_segment ((x, y) : int * int) ((x1, y1) : int * int)
         *. (float y -. float y1)
         /. (float y2 -. float y1)
         +. float x1
+
+(* Inline testing for intersects segment. *)
+let%test "intersects_segment" = intersects_segment (5, 5) (0, 0) (10, 10)
+let%test "intersects_segment 2" = intersects_segment (0, 5) (0, 10) (10, 0)
+let%test "intersects_segment 3" = intersects_segment (0, 10) (0, 10) (10, 0)
+
+let%test "intersects_segment 4" =
+  not (intersects_segment (15, 15) (0, 0) (10, 10))
+
+let%test "intersects_segment 5" =
+  not (intersects_segment (5, 15) (0, 0) (10, 10))
+
+let%test "intersects_segment 6" =
+  not (intersects_segment (10, 5) (0, 0) (10, 10))
+
+let fill_square (data : int array array) ((start_x, start_y) : int * int)
+    ((end_x, end_y) : int * int) (color : int) =
+  try
+    let (a, b), (u, v) =
+      standard_coordinates (start_x, start_y) (end_x, end_y)
+    in
+    let height = Array.length data in
+    Array.mapi
+      (fun temp row ->
+        let y = height - temp - 1 in
+        Array.mapi
+          (fun x rgb ->
+            if a <= x && x <= u && b <= y && y <= v then color else rgb)
+          row)
+      data
+  with _ -> raise (Failure "invalid coordinates")
+
+let fill (data : int array array) (pairs : (int * int) list) (color : int) =
+  let n = List.length pairs in
+  if n < 3 then raise (Failure "polygon must have at least 3 vertices");
+  try
+    let segments =
+      List.mapi
+        (fun i pair -> (pair, List.nth pairs ((i + 1) mod List.length pairs)))
+        pairs
+    in
+    let height = Array.length data in
+    Array.mapi
+      (fun temp row ->
+        let y = height - temp - 1 in
+        Array.mapi
+          (fun x rgb ->
+            let crossings =
+              List.fold_left
+                (fun acc (s, e) ->
+                  if intersects_segment (x, y) s e then acc + 1 else acc)
+                0 segments
+            in
+            let on =
+              List.exists (fun (px, py) -> on_segment px py (x, y)) segments
+            in
+            if crossings mod 2 = 1 || List.mem (x, y) pairs || on then color
+            else rgb)
+          row)
+      data
+  with _ -> raise (Failure "invalid coordinates")
+
+let cut_square (data : int array array) ((start_x, start_y) : int * int)
+    ((end_x, end_y) : int * int) =
+  fill_square data (start_x, start_y) (end_x, end_y) (Graphics.rgb 255 255 255)
+
+let cut (data : int array array) (pairs : (int * int) list) =
+  fill data pairs (Graphics.rgb 255 255 255)
 
 (* Currently supports only SIMPLE polygons. *)
 let cut_advanced (data : int array array) (pairs : (int * int) list) =
