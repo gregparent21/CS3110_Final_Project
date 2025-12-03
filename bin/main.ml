@@ -264,19 +264,25 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             button_height
         then (
           add_message
-            "Press 'c' to apply or 'r' to reset. Enter fill color (R G B) in \
+            "Press 'f' to apply or 'r' to reset. Enter fill color (R G B) in \
              terminal:";
           add_message
             "Fill tool selected! Click two opposite corners to fill a square \
              or three or more points to fill a polygon.";
-          let color_input = read_line () in
-          let r, g, b =
-            match String.split_on_char ' ' color_input with
-            | [ r_str; g_str; b_str ] ->
-                (int_of_string r_str, int_of_string g_str, int_of_string b_str)
-            | _ -> (0, 0, 0)
+          add_message
+            "Please enter three integers between 0 and 255 in the terminal.";
+          let input = read_line () in
+          let rgb_vals =
+            try List.map int_of_string (String.split_on_char ' ' input)
+            with Failure _ ->
+              add_message "Invalid input. Using default color (0, 0, 0).";
+              [ 0; 0; 0 ]
           in
-          fill_color := Graphics.rgb r g b;
+          fill_color :=
+            Graphics.rgb
+              (List.nth rgb_vals 0 |> min 255 |> max 0)
+              (List.nth rgb_vals 1 |> min 255 |> max 0)
+              (List.nth rgb_vals 2 |> min 255 |> max 0);
           flush stdout;
           Unix.sleepf 0.2;
           event_loop "fill")
@@ -475,6 +481,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           img_y_ref := original_img_y;
           zoom_level := 0;
           zoom_base := Array.map Array.copy !img_data;
+          pixel_fact := 2;
 
           let win_w = size_x () in
           let win_h = size_y () in
@@ -638,6 +645,39 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
         redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x
           current_tool;
 
+        clicked_points := [];
+        add_message "Points reset. Select a tool and continue.";
+        event_loop "")
+      else if
+        key = 'f' && current_tool = "fill" && List.length !clicked_points >= 2
+      then (
+        if List.length !clicked_points = 2 then (
+          let pts = List.rev !clicked_points in
+          let p1 = List.nth pts 0 in
+          let p2 = List.nth pts 1 in
+          let fill_data = fill_square !img_data p1 p2 !fill_color in
+          prev_cut := array_sub !img_data fill_data;
+          img_data := fill_data;
+          add_message "Applying square fill.\n")
+        else begin
+          let fill_data =
+            fill !img_data (List.rev !clicked_points) !fill_color
+          in
+          prev_cut := array_sub !img_data fill_data;
+          img_data := fill_data;
+          add_message "Fill applied with points:\n";
+          List.iter
+            (fun (x, y) ->
+              add_message ("(" ^ string_of_int x ^ ", " ^ string_of_int y ^ ")"))
+            (List.rev !clicked_points);
+          flush stdout
+        end;
+
+        let new_img = Graphics.make_image !img_data in
+        redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x
+          current_tool;
+
+        fill_color := Graphics.rgb 0 0 0;
         clicked_points := [];
         add_message "Points reset. Select a tool and continue.";
         event_loop "")

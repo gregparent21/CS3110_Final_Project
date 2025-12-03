@@ -12,16 +12,16 @@ let standard_coordinates ((a, b) : int * int) ((x, y) : int * int) =
 
 (* Inline testing for standard coordinates. *)
 let%test "standard_coordinates" =
-  standard_coordinates (1, 4) (4, 1) = ((1, 1), (4, 4))
+  (standard_coordinates (1, 4) (4, 1) = ((1, 1), (4, 4))) [@coverage off]
 
 let%test "standard_coordinates 2" =
-  standard_coordinates (4, 1) (1, 4) = ((1, 1), (4, 4))
+  (standard_coordinates (4, 1) (1, 4) = ((1, 1), (4, 4))) [@coverage off]
 
 let%test "standard_coordinates 3" =
-  standard_coordinates (1, 1) (4, 4) = ((1, 1), (4, 4))
+  (standard_coordinates (1, 1) (4, 4) = ((1, 1), (4, 4))) [@coverage off]
 
 let%test "standard_coordinates 4" =
-  standard_coordinates (4, 4) (1, 1) = ((1, 1), (4, 4))
+  (standard_coordinates (4, 4) (1, 1) = ((1, 1), (4, 4))) [@coverage off]
 
 (* Determines if the point p is on the line segment from s to e. *)
 let on_segment ((s_x, s_y) : int * int) ((e_x, e_y) : int * int)
@@ -33,12 +33,16 @@ let on_segment ((s_x, s_y) : int * int) ((e_x, e_y) : int * int)
   && p_y <= max s_y e_y
 
 (* Inline testing for on segment. *)
-let%test "on_segment" = on_segment (0, 0) (10, 10) (5, 5)
-let%test "on_segment 2" = on_segment (0, 10) (10, 0) (5, 5)
-let%test "on_segment 3" = on_segment (1, 1) (2, 2) (1, 1)
-let%test "on_segment 4" = on_segment (1, 1) (2, 2) (2, 2)
-let%test "on_segment 5" = not (on_segment (0, 0) (10, 10) (5, 6))
-let%test "on_segment 6" = not (on_segment (0, 10) (10, 0) (6, 5))
+let%test "on_segment" = on_segment (0, 0) (10, 10) (5, 5) [@coverage off]
+let%test "on_segment 2" = on_segment (0, 10) (10, 0) (5, 5) [@coverage off]
+let%test "on_segment 3" = on_segment (1, 1) (2, 2) (1, 1) [@coverage off]
+let%test "on_segment 4" = on_segment (1, 1) (2, 2) (2, 2) [@coverage off]
+
+let%test "on_segment 5" =
+  not (on_segment (0, 0) (10, 10) (5, 6)) [@coverage off]
+
+let%test "on_segment 6" =
+  not (on_segment (0, 10) (10, 0) (6, 5)) [@coverage off]
 
 (* Determines if the ray in the positive x infinity direction from (x, y)
    intersects the line segment from (x1, y1) to (x2, y2).*)
@@ -57,18 +61,23 @@ let intersects_segment ((x, y) : int * int) ((x1, y1) : int * int)
         +. float x1
 
 (* Inline testing for intersects segment. *)
-let%test "intersects_segment" = intersects_segment (5, 5) (0, 0) (10, 10)
-let%test "intersects_segment 2" = intersects_segment (0, 5) (0, 10) (10, 0)
-let%test "intersects_segment 3" = intersects_segment (0, 10) (0, 10) (10, 0)
+let%test "intersects_segment" =
+  intersects_segment (5, 5) (0, 0) (10, 10) [@coverage off]
+
+let%test "intersects_segment 2" =
+  intersects_segment (0, 5) (0, 10) (10, 0) [@coverage off]
+
+let%test "intersects_segment 3" =
+  intersects_segment (0, 10) (0, 10) (10, 0) [@coverage off]
 
 let%test "intersects_segment 4" =
-  not (intersects_segment (15, 15) (0, 0) (10, 10))
+  not (intersects_segment (15, 15) (0, 0) (10, 10)) [@coverage off]
 
 let%test "intersects_segment 5" =
-  not (intersects_segment (5, 15) (0, 0) (10, 10))
+  not (intersects_segment (5, 15) (0, 0) (10, 10)) [@coverage off]
 
 let%test "intersects_segment 6" =
-  not (intersects_segment (10, 5) (0, 0) (10, 10))
+  not (intersects_segment (10, 5) (0, 0) (10, 10)) [@coverage off]
 
 let fill_square (data : int array array) ((start_x, start_y) : int * int)
     ((end_x, end_y) : int * int) (color : int) =
@@ -146,22 +155,25 @@ let paste (data : int array array) (image : int array array)
 let r p = (p lsr 16) land 0xFF
 
 let%test "r gets the red component" =
-  let p = Graphics.rgb 123 45 67 in
-  r p = 123
+  (let p = Graphics.rgb 123 45 67 in
+   r p = 123)
+  [@coverage off]
 
 (**[g] takes a pixel point and returns that pixel's red value (0-255).*)
 let g p = (p lsr 8) land 0xFF
 
 let%test "g gets the green component" =
-  let p = Graphics.rgb 123 45 67 in
-  g p = 45
+  (let p = Graphics.rgb 123 45 67 in
+   g p = 45)
+  [@coverage off]
 
 (**[b] takes a pixel point and returns that pixel's red value (0-255).*)
 let b p = p land 0xFF
 
 let%test "b gets the blue component" =
-  let p = Graphics.rgb 123 45 67 in
-  b p = 67
+  (let p = Graphics.rgb 123 45 67 in
+   b p = 67)
+  [@coverage off]
 
 (**[average_neighbors] takes a data matrix of RGB values and averages squares of
    pixels of size (factor * factor) into 1 averaged pixel. Returns the averaged
@@ -193,7 +205,7 @@ let average_neighbors (data : int array array) (factor : int) (x : int)
 let%test "average_neighbors on a 1x1 image" =
   let p = Graphics.rgb 50 60 70 in
   let data = [| [| p |] |] in
-  average_neighbors data 1 0 0 = p
+  average_neighbors data 1 0 0 = (p [@coverage off])
 
 let%test "average_neighbors on a 2x2 image" =
   let a = Graphics.rgb 10 20 30 in
@@ -202,7 +214,7 @@ let%test "average_neighbors on a 2x2 image" =
   let d = Graphics.rgb 40 50 60 in
   let data = [| [| a; b |]; [| c; d |] |] in
   let avg = Graphics.rgb 25 35 45 in
-  average_neighbors data 2 0 0 = avg
+  average_neighbors data 2 0 0 = (avg [@coverage off])
 
 let shrink (data : int array array) : int array array =
   let data' =
