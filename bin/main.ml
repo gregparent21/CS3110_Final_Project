@@ -259,7 +259,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
         then (
           add_message "Shrink tool selected! Shrinking image.";
 
-          img_data := shrink !img_data 2;
+          img_data := shrink !img_data ;
 
           (* update current width/height from the new data *)
           let new_h = Array.length !img_data in
