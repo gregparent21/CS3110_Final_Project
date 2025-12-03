@@ -76,6 +76,12 @@ let tests =
              |]
            in
            assert_equal expected result );
+         ( "Test invert_colors twice is identity" >:: fun _ ->
+           let p1 = Graphics.rgb 10 20 30 in
+           let p2 = Graphics.rgb 200 150 100 in
+           let img = [| [| p1; p2 |]; [| p2; p1 |] |] in
+           let result = invert_colors (invert_colors img) in
+           assert_equal img result );
          ( "Test cut_square" >:: fun _ ->
            let result =
              cut_square [| [| 0; 12 |]; [| 42; 3110 |] |] (0, 0) (1, 1)
@@ -248,6 +254,27 @@ let tests =
                [| 100; 100; 100; 100; 100 |];
              |]
            in
+           assert_equal expected result );
+         ( "Test crop bottom-left 2x2" >:: fun _ ->
+           let img =
+             [| [| 10; 11; 12 |]; [| 20; 21; 22 |]; [| 30; 31; 32 |] |]
+           in
+           let result = crop img (0, 0) (1, 1) in
+           let expected = [| [| 20; 21 |]; [| 30; 31 |] |] in
+           assert_equal expected result );
+         ( "Test crop reversed coords" >:: fun _ ->
+           let img =
+             [| [| 10; 11; 12 |]; [| 20; 21; 22 |]; [| 30; 31; 32 |] |]
+           in
+           let result = crop img (1, 1) (0, 0) in
+           let expected = [| [| 20; 21 |]; [| 30; 31 |] |] in
+           assert_equal expected result );
+         ( "Test crop single pixel" >:: fun _ ->
+           let img =
+             [| [| 10; 11; 12 |]; [| 20; 21; 22 |]; [| 30; 31; 32 |] |]
+           in
+           let result = crop img (2, 1) (2, 1) in
+           let expected = [| [| 22 |] |] in
            assert_equal expected result );
        ]
 
