@@ -118,11 +118,23 @@ let paste (base : int array array) (overlay : int array array)
 (**[r] takes a pixel point and returns that pixel's red value (0-255).*)
 let r p = (p lsr 16) land 0xFF
 
+let%test "r gets the red component" =
+  let p = Graphics.rgb 123 45 67 in
+  r p = 123
+
 (**[g] takes a pixel point and returns that pixel's red value (0-255).*)
 let g p = (p lsr 8) land 0xFF
 
+let%test "g gets the green component" =
+  let p = Graphics.rgb 123 45 67 in
+  g p = 45
+
 (**[b] takes a pixel point and returns that pixel's red value (0-255).*)
 let b p = p land 0xFF
+
+let%test "b gets the blue component" =
+  let p = Graphics.rgb 123 45 67 in
+  b p = 67
 
 (**[average_neighbors] takes a data matrix of RGB values and averages squares of
    pixels of size (factor * factor) into 1 averaged pixel. Returns the averaged
@@ -146,6 +158,20 @@ let average_neighbors (data : int array array) (factor : int) (x : int)
     avg_b := !avg_b / (factor * factor);
     (!avg_r lsl 16) lor (!avg_g lsl 8) lor !avg_b
   with _ -> failwith "Out of bounds"
+
+let%test "average_neighbors on a 1x1 image" =
+  let p = Graphics.rgb 50 60 70 in
+  let data = [| [| p |] |] in
+  average_neighbors data 1 0 0 = p
+
+let%test "average_neighbors on a 2x2 image" =
+  let a = Graphics.rgb 10 20 30 in
+  let b = Graphics.rgb 20 30 40 in
+  let c = Graphics.rgb 30 40 50 in
+  let d = Graphics.rgb 40 50 60 in
+  let data = [| [| a; b |]; [| c; d |] |] in
+  let avg = Graphics.rgb 25 35 45 in
+  average_neighbors data 2 0 0 = avg
 
 let shrink (data : int array array) : int array array =
   let data' =
