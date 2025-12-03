@@ -23,25 +23,7 @@ let%test "standard_coordinates 3" =
 let%test "standard_coordinates 4" =
   standard_coordinates (4, 4) (1, 1) = ((1, 1), (4, 4))
 
-let cut_square (data : int array array) ((start_x, start_y) : int * int)
-    ((end_x, end_y) : int * int) =
-  try
-    let (a, b), (u, v) =
-      standard_coordinates (start_x, start_y) (end_x, end_y)
-    in
-    let height = Array.length data in
-    Array.mapi
-      (fun temp row ->
-        let y = height - temp - 1 in
-        Array.mapi
-          (fun x rgb ->
-            if a <= x && x <= u && b <= y && y <= v then
-              Graphics.rgb 255 255 255
-            else rgb)
-          row)
-      data
-  with _ -> raise (Failure "cut_advanced: invalid coordinates")
-
+(* Determines if the point p is on the line segment from s to e. *)
 let on_segment ((s_x, s_y) : int * int) ((e_x, e_y) : int * int)
     ((p_x, p_y) : int * int) =
   ((e_x - s_x) * (p_y - s_y)) - ((e_y - s_y) * (p_x - s_x)) = 0
