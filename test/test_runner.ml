@@ -7,6 +7,7 @@ let () =
            Test_FinalProject.tests;
            Test_Image_Loading.tests;
            Test_ImageOps.tests;
+           Test_FileSaver.tests;
          ]
   in
   run_test_tt_main suite

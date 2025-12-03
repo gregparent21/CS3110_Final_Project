@@ -26,17 +26,6 @@ let save_image_to_png (data : int array array) (output_path : string) : unit =
     Printf.printf "Error saving PNG: %s\n" (Printexc.to_string e);
     flush stdout
 
-(** Save pixel data to JPEG file *)
-let save_image_to_jpg (data : int array array) (output_path : string) : unit =
-  try
-    let img = pixel_array_to_image data in
-    Images.save output_path (Some Images.Jpeg) [] (Images.Rgb24 img);
-    Printf.printf "Image saved to %s\n" output_path;
-    flush stdout
-  with e ->
-    Printf.printf "Error saving JPEG: %s\n" (Printexc.to_string e);
-    flush stdout
-
 (* Inline testing for pixel array to dimensions*)
 
 let%test "pixel_array_to_image_single_pixel" =
@@ -46,12 +35,7 @@ let%test "pixel_array_to_image_single_pixel" =
   px.Color.r = 0x11 && px.Color.g = 0x22 && px.Color.b = 0x33
 
 let%test "pixel_array_to_image_dimensions" =
-  let data =
-    [|
-      [| 0x000000; 0xFFFFFF |];
-      [| 0x123456; 0xABCDEF |];
-    |]
-  in
+  let data = [| [| 0x000000; 0xFFFFFF |]; [| 0x123456; 0xABCDEF |] |] in
   let img = pixel_array_to_image data in
   img.Rgb24.width = 2 && img.Rgb24.height = 2
 
@@ -62,4 +46,3 @@ let%test "pixel_array_to_image_empty_raises" =
   with
   | Failure _ -> true
   | _ -> false
-
