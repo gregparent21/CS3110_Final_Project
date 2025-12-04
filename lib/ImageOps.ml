@@ -133,10 +133,10 @@ let cut (data : int array array) (pairs : (int * int) list) =
 
 let paste (data : int array array) (image : int array array)
     (cut : int array array) ((start_x, start_y) : int * int) =
-  let low_x = ref 0 in
-  let low_y = ref 0 in
-  let high_x = ref (Array.length image.(0) - 1) in
-  let high_y = ref (Array.length image - 1) in
+  let low_x = ref (Array.length image.(0) - 1) in
+  let low_y = ref (Array.length image - 1) in
+  let high_x = ref 0 in
+  let high_y = ref 0 in
   for row = 0 to Array.length image - 1 do
     for col = 0 to Array.length image.(0) - 1 do
       if data.(row).(col) <> 0 then begin
@@ -148,10 +148,11 @@ let paste (data : int array array) (image : int array array)
     done
   done;
   try
+    let height = Array.length image in
     for i = 0 to !high_y - !low_y do
       for j = 0 to !high_x - !low_x do
-        if data.(i + !low_y).(j + !low_x) < 0 then
-          image.(i + start_y).(j + start_x) <- cut.(i + !low_y).(j + !low_x)
+        image.(height - i - start_y - 1).(j + start_x) <-
+          cut.(!high_y - i).(j + !low_x)
       done
     done;
     image

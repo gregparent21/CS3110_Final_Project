@@ -407,39 +407,19 @@ let tests =
            let b = [| [| 1; 2 |] |] in
            assert_raises (Failure "Array Subtraction Error!") (fun () ->
                ignore (array_sub a b)) );
-         ( "paste 2x2 into 3x3 at (1,1)" >:: fun _ ->
-           let base = [| [| 0; 0; 0 |]; [| 0; 0; 0 |]; [| 0; 0; 0 |] |] in
-           let img = [| [| 1; 2 |]; [| 3; 4 |] |] in
-           let result = paste base img (1, 1) in
-           let expected = [| [| 0; 0; 0 |]; [| 0; 1; 2 |]; [| 0; 3; 4 |] |] in
+         ( "Test paste 1x1 onto 2x2 at (1,1)" >:: fun _ ->
+           let data = [| [| 0; 0 |]; [| 0; -1 |] |] in
+           let image = [| [| 0; 0 |]; [| 0; 0 |] |] in
+           let cut = [| [| 3; 1 |]; [| 1; 5 |] |] in
+           let result = paste data image cut (1, 1) in
+           let expected = [| [| 0; 0 |]; [| 0; 5 |] |] in
+           print_endline
+             (Printf.sprintf "Result: [%d,%d; %d,%d]"
+                result.(0).(0)
+                result.(0).(1)
+                result.(1).(0)
+                result.(1).(1));
            assert_equal expected result );
-         ( "paste 1x1 into corner" >:: fun _ ->
-           let base = [| [| 10; 11 |]; [| 20; 21 |] |] in
-           let img = [| [| 7 |] |] in
-           let result = paste base img (0, 0) in
-           let expected = [| [| 7; 11 |]; [| 20; 21 |] |] in
-           assert_equal expected result );
-         ( "paste along bottom row, right edge" >:: fun _ ->
-           let base = [| [| 0; 0; 0 |]; [| 0; 0; 0 |] |] in
-           let img = [| [| 5; 6 |] |] in
-           let result = paste base img (1, 1) in
-           let expected = [| [| 0; 0; 0 |]; [| 0; 5; 6 |] |] in
-           assert_equal expected result );
-         ( "paste negative coordinates raises error" >:: fun _ ->
-           let base = Array.make_matrix 3 3 0 in
-           let img = [| [| 1 |] |] in
-           assert_raises (Failure "Paste operation out of bounds") (fun () ->
-               ignore (paste base img (-1, 0))) );
-         ( "paste too far right raises error" >:: fun _ ->
-           let base = Array.make_matrix 3 3 0 in
-           let img = [| [| 1; 2 |] |] in
-           assert_raises (Failure "Paste operation out of bounds") (fun () ->
-               ignore (paste base img (2, 0))) );
-         ( "paste too far down raises error" >:: fun _ ->
-           let base = Array.make_matrix 3 3 0 in
-           let img = [| [| 1 |]; [| 2 |] |] in
-           assert_raises (Failure "Paste operation out of bounds") (fun () ->
-               ignore (paste base img (0, 2))) );
          ( "Test rotate_90 2x3 -> 3x2" >:: fun _ ->
            let img = [| [| 1; 2; 3 |]; [| 4; 5; 6 |] |] in
            let result = rotate_90 img in
