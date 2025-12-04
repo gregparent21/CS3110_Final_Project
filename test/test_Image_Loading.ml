@@ -62,6 +62,39 @@ let tests =
            let w, h = ImageLoader.image_dimensions img in
            assert_bool "width positive" (w > 0);
            assert_bool "height positive" (h > 0) );
+         ( "Test image_dimensions with Cmyk32" >:: fun _ ->
+           let open Camlimages in
+           let w, h = (5, 6) in
+           let img = Cmyk32.create w h in
+           (* Fill pixels with arbitrary CMYK data *)
+           for y = 0 to h - 1 do
+             for x = 0 to w - 1 do
+               Cmyk32.set img x y { Color.c = 0; m = 0; y = 0; k = 0 }
+             done
+           done;
+           let result = ImageLoader.image_dimensions (Cmyk32 img) in
+           assert_equal (w, h) result );
+         ( "Test cmyk_pixel_to_rgb white (C=0 M=0 Y=0 K=0)" >:: fun _ ->
+           let open Camlimages in
+           let px = { Color.c = 0; m = 0; y = 0; k = 0 } in
+           let rgb = cmyk_pixel_to_rgb px in
+           assert_equal 255 rgb.Color.r;
+           assert_equal 255 rgb.Color.g;
+           assert_equal 255 rgb.Color.b );
+         ( "Test cmyk_pixel_to_rgb black (C=0 M=0 Y=0 K=255)" >:: fun _ ->
+           let open Camlimages in
+           let px = { Color.c = 0; m = 0; y = 0; k = 255 } in
+           let rgb = cmyk_pixel_to_rgb px in
+           assert_equal 0 rgb.Color.r;
+           assert_equal 0 rgb.Color.g;
+           assert_equal 0 rgb.Color.b );
+         ( "Test cmyk_pixel_to_rgb cyan (C=255 M=0 Y=0 K=0)" >:: fun _ ->
+           let open Camlimages in
+           let px = { Color.c = 255; m = 0; y = 0; k = 0 } in
+           let rgb = cmyk_pixel_to_rgb px in
+           assert_equal 0 rgb.Color.r;
+           assert_bool "green is 255" (rgb.Color.g = 255);
+           assert_bool "blue is 255" (rgb.Color.b = 255) );
        ]
 
 let _ = run_test_tt_main tests
