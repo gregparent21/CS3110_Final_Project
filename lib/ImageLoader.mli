@@ -1,3 +1,6 @@
+val cmyk_pixel_to_rgb : Color.cmyk -> Color.rgb
+(** [cmyk_pixel_to_rgb px] converts a CMYK pixel to RGB color space. *)
+
 val load_image_raw : string -> Images.t
 (** [load_image_raw path] loads the image at [path] and returns the raw Images.t
     variant. No graphics window needed. *)

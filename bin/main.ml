@@ -872,18 +872,18 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             prev_cut := array_sub !img_data cut_data;
             push_undo ();
             img_data := cut_data;
-            add_message "Applying square cut.\n")
+            add_message "Applying square cut.")
           else begin
             let cut_data = cut !img_data (List.rev !clicked_points) in
             prev_cut := array_sub cut_data !img_data;
             push_undo ();
             img_data := cut_data;
-            add_message "Cut applied with points:\n";
             List.iter
               (fun (x, y) ->
                 add_message
                   ("(" ^ string_of_int x ^ ", " ^ string_of_int y ^ ")"))
               (List.rev !clicked_points);
+            add_message "Cut applied with points:";
             flush stdout
           end;
           let new_img = make_display_image () in

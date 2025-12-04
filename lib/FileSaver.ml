@@ -29,20 +29,20 @@ let save_image_to_png (data : int array array) (output_path : string) : unit =
 (* Inline testing for pixel array to dimensions*)
 
 let%test "pixel_array_to_image_single_pixel" =
-  let data = [| [| 0x112233 |] |] in
+  (let data = [| [| 0x112233 |] |] in
   let img = pixel_array_to_image data in
   let px = Rgb24.get img 0 0 in
-  px.Color.r = 0x11 && px.Color.g = 0x22 && px.Color.b = 0x33
+  px.Color.r = 0x11 && px.Color.g = 0x22 && px.Color.b = 0x33) [@coverage off]
 
 let%test "pixel_array_to_image_dimensions" =
-  let data = [| [| 0x000000; 0xFFFFFF |]; [| 0x123456; 0xABCDEF |] |] in
+  (let data = [| [| 0x000000; 0xFFFFFF |]; [| 0x123456; 0xABCDEF |] |] in 
   let img = pixel_array_to_image data in
-  img.Rgb24.width = 2 && img.Rgb24.height = 2
+  img.Rgb24.width = 2 && img.Rgb24.height = (2) ) [@coverage off]
 
 let%test "pixel_array_to_image_empty_raises" =
-  try
+  (try
     let _ = pixel_array_to_image [||] in
-    false
+    false 
   with
-  | Failure _ -> true
-  | _ -> false
+  | Failure _ -> true 
+  | _ -> false )[@coverage off]
