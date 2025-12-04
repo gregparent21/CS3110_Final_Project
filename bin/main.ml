@@ -283,9 +283,12 @@ let draw_toolbar win_w win_h toolbar_x current_tool brightness_level =
 
   set_color (rgb 255 165 0);
   fill_circle (slider_x + (slider_width / 2)) knob_y 5;
+
   set_color black;
-  moveto (slider_x - 5) (slider_y + slider_h + 5);
-  draw_string "Bright"
+  let label = "Brt" in
+  let tw, _th = text_size label in
+  moveto (slider_x + (slider_width / 2) - (tw / 2)) (slider_y + slider_h + 5);
+  draw_string label
 
 (** [redraw img img_x img_y w h toolbar_x current_tool] is a helper function
     that redraws the image after applying the cut. *)
