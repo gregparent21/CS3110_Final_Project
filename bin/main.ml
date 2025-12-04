@@ -26,43 +26,41 @@ let log_exception context exn =
   let exn_str = Printexc.to_string exn in
   let msg = "Unexpected error in " ^ context ^ ": " ^ exn_str in
   prerr_endline msg;
-  (try
-     (* Try to log into the message panel. *)
-     messages := msg :: !messages;
-     let max_lines = 6 in
-     if List.length !messages > max_lines then
-       let rec take n l =
-         if n <= 0 then []
-         else
-           match l with
-           | [] -> []
-           | x :: xs -> x :: take (n - 1) xs
-       in
-       messages := take max_lines !messages;
-     let win_w =
-       try size_x () with _ -> 0
-     in
-     if win_w > 0 then (
-       let panel_h = message_panel_h in
-       set_color (rgb 245 245 245);
-       fill_rect 0 0 win_w panel_h;
-       set_color black;
-       draw_rect 0 0 win_w panel_h;
-       let line_h = 14 in
-       let margin = 8 in
-       let rec draw_lines ls idx =
-         match ls with
-         | [] -> ()
-         | hd :: tl ->
-             let y = margin + (idx * line_h) in
-             moveto margin y;
-             draw_string hd;
-             draw_lines tl (idx + 1)
-       in
-       let to_draw = List.rev !messages in
-       draw_lines to_draw 0;
-       synchronize ())
-   with _ -> ())
+  try
+    (* Try to log into the message panel. *)
+    messages := msg :: !messages;
+    let max_lines = 6 in
+    if List.length !messages > max_lines then (
+      let rec take n l =
+        if n <= 0 then []
+        else
+          match l with
+          | [] -> []
+          | x :: xs -> x :: take (n - 1) xs
+      in
+      messages := take max_lines !messages;
+      let win_w = try size_x () with _ -> 0 in
+      if win_w > 0 then (
+        let panel_h = message_panel_h in
+        set_color (rgb 245 245 245);
+        fill_rect 0 0 win_w panel_h;
+        set_color black;
+        draw_rect 0 0 win_w panel_h;
+        let line_h = 14 in
+        let margin = 8 in
+        let rec draw_lines ls idx =
+          match ls with
+          | [] -> ()
+          | hd :: tl ->
+              let y = margin + (idx * line_h) in
+              moveto margin y;
+              draw_string hd;
+              draw_lines tl (idx + 1)
+        in
+        let to_draw = List.rev !messages in
+        draw_lines to_draw 0;
+        synchronize ()))
+  with _ -> ()
 
 let draw_message_panel win_w _panel_h =
   let panel_h = message_panel_h in
@@ -381,15 +379,16 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             Unix.sleepf 0.2;
             event_loop "paste")
           else if
-            is_point_in_rect screen_x screen_y toolbar_x zoom_y (button_width / 2)
-              button_height
+            is_point_in_rect screen_x screen_y toolbar_x zoom_y
+              (button_width / 2) button_height
           then
             if !zoom_level <= -3 then (
               add_message "Cannot shrink further (zoom limit reached).";
               Unix.sleepf 0.2;
               event_loop current_tool)
             else (
-              if !zoom_level = 0 then zoom_base := Array.map Array.copy !img_data;
+              if !zoom_level = 0 then
+                zoom_base := Array.map Array.copy !img_data;
 
               zoom_level := !zoom_level - 1;
               push_undo ();
@@ -425,7 +424,8 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
               Unix.sleepf 0.2;
               event_loop current_tool)
             else (
-              if !zoom_level = 0 then zoom_base := Array.map Array.copy !img_data;
+              if !zoom_level = 0 then
+                zoom_base := Array.map Array.copy !img_data;
 
               zoom_level := !zoom_level + 1;
               push_undo ();
@@ -477,7 +477,6 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             is_point_in_rect screen_x screen_y toolbar_x mirror_y button_width
               button_height
           then (
-            add_message "Mirror tool selected! Flipping horizontally.";
             push_undo ();
             img_data := flip_horizontal !img_data;
             let new_img = Graphics.make_image !img_data in
@@ -503,7 +502,6 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             is_point_in_rect screen_x screen_y toolbar_x pixelate_y button_width
               button_height
           then (
-            add_message "Pixelate tool selected! Pixelating image.";
             push_undo ();
             img_data := pixelate !img_data !pixel_fact;
 
@@ -535,10 +533,12 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             is_point_in_rect screen_x screen_y toolbar_x save_y button_width
               button_height
           then (
-            add_message "Save tool selected! Enter filename (without extension): ";
+            add_message
+              "Save tool selected! Enter filename (without extension): ";
             let filename = read_line () in
             add_message "Saving as PNG...";
-            FinalProject.FileSaver.save_image_to_png !img_data (filename ^ ".png");
+            FinalProject.FileSaver.save_image_to_png !img_data
+              (filename ^ ".png");
             add_message (Printf.sprintf "Image saved as %s.png" filename);
             Unix.sleepf 0.2;
             event_loop "save")
@@ -735,7 +735,8 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             add_message "Cut applied with points:\n";
             List.iter
               (fun (x, y) ->
-                add_message ("(" ^ string_of_int x ^ ", " ^ string_of_int y ^ ")"))
+                add_message
+                  ("(" ^ string_of_int x ^ ", " ^ string_of_int y ^ ")"))
               (List.rev !clicked_points);
             flush stdout
           end;
@@ -769,7 +770,8 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             add_message "Fill applied with points:\n";
             List.iter
               (fun (x, y) ->
-                add_message ("(" ^ string_of_int x ^ ", " ^ string_of_int y ^ ")"))
+                add_message
+                  ("(" ^ string_of_int x ^ ", " ^ string_of_int y ^ ")"))
               (List.rev !clicked_points);
             flush stdout
           end;
@@ -799,25 +801,20 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
 
           clicked_points := [];
           add_message "Points reset. Select a tool and continue.";
-          event_loop "")
-
-        (* point reset (tool command) *)
+          event_loop "" (* point reset (tool command) *))
         else if key = 'r' then (
           clicked_points := [];
           add_message "Points reset.";
-          event_loop current_tool)
-
-        (* Save: 's' *)
+          event_loop current_tool (* Save: 's' *))
         else if key = 's' then (
           add_message "Save (keyboard): Enter filename (without extension): ";
           let filename = read_line () in
           add_message "Saving as PNG...";
           FinalProject.FileSaver.save_image_to_png !img_data (filename ^ ".png");
           add_message (Printf.sprintf "Image saved as %s.png" filename);
-          event_loop "save")
-
-        (* Zoom in: '+' *)
-        else if (key = '=' || key = '+') then (
+          event_loop "save"
+          (* Zoom in: '+' *))
+        else if key = '=' || key = '+' then
           if !zoom_level >= 3 then (
             add_message "Cannot enlarge further (zoom limit reached).";
             event_loop current_tool)
@@ -846,10 +843,9 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             draw_toolbar win_w win_h toolbar_x "zoom_in";
             draw_message_panel win_w message_panel_h;
             synchronize ();
-            event_loop "zoom_in"))
-
-        (* Zoom out: '-' *)
-        else if key = '-' then (
+            event_loop "zoom_in"
+            (* Zoom out: '-' *))
+        else if key = '-' then
           if !zoom_level <= -3 then (
             add_message "Cannot shrink further (zoom limit reached).";
             event_loop current_tool)
@@ -878,9 +874,8 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             draw_toolbar win_w win_h toolbar_x "zoom_out";
             draw_message_panel win_w message_panel_h;
             synchronize ();
-            event_loop "zoom_out"))
-
-        (* Full reset: 'R' *)
+            event_loop "zoom_out"
+            (* Full reset: 'R' *))
         else if key = 'R' then (
           push_undo ();
           img_data := Array.map Array.copy original_data;
@@ -903,7 +898,6 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           add_message "Image reset to original (keyboard).";
           synchronize ();
           event_loop "reset")
-
         else if key = 'q' then (
           add_message "Exiting.";
           exit 0)
