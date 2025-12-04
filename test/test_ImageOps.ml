@@ -450,6 +450,26 @@ let tests =
            let result = rotate_90 img in
            let expected = [| [| 3; 1 |]; [| 4; 2 |] |] in
            assert_equal expected result );
+         ( "Test adjust_brightness +" >:: fun _ ->
+           let img = [| [| c 10; c 20 |]; [| c 30; c 40 |] |] in
+           let result = adjust_brightness img 20 in
+           let expected = [| [| c 30; c 40 |]; [| c 50; c 60 |] |] in
+           assert_equal expected result );
+         ( "Test adjust_brightness -" >:: fun _ ->
+           let img = [| [| c 100; c 120 |]; [| c 140; c 160 |] |] in
+           let result = adjust_brightness img (-30) in
+           let expected = [| [| c 70; c 90 |]; [| c 110; c 130 |] |] in
+           assert_equal expected result );
+         ( "Test adjust_brightness clamp high" >:: fun _ ->
+           let img = [| [| c 240; c 250 |] |] in
+           let result = adjust_brightness img 30 in
+           let expected = [| [| c 255; c 255 |] |] in
+           assert_equal expected result );
+         ( "Test adjust_brightness clamp low" >:: fun _ ->
+           let img = [| [| c 5; c 20 |] |] in
+           let result = adjust_brightness img (-50) in
+           let expected = [| [| c 0; c 0 |] |] in
+           assert_equal expected result );
        ]
 
 let _ = run_test_tt_main tests
