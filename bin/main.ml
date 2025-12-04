@@ -110,6 +110,65 @@ let add_message s =
     synchronize ()
   with _ -> ()
 
+(** Prompt for a filename using keyboard input in the UI (message panel),
+    not stdin. Returns "" if the user cancels or the graphics window closes. *)
+let prompt_filename_ui () : string =
+  let buf = Buffer.create 32 in
+  let finished = ref false in
+  while not !finished do
+    try
+      let win_w =
+        try size_x () with
+        | Graphics.Graphic_failure msg ->
+            prerr_endline ("Graphics closed in prompt_filename_ui: " ^ msg);
+            finished := true;
+            0
+      in
+      if (not !finished) && win_w > 0 then (
+        (* Redraw panel and show the current text buffer *)
+        draw_message_panel win_w message_panel_h;
+        set_color black;
+        moveto 10 (message_panel_h - 20);
+        let current = Buffer.contents buf in
+        draw_string ("Filename (no extension): " ^ current);
+        synchronize ();
+        (* Wait for a key *)
+        while not (key_pressed ()) do
+          Unix.sleepf 0.01
+        done;
+        let ch = read_key () in
+        match ch with
+        | '\r' | '\n' ->
+            if Buffer.length buf > 0 then finished := true
+        | '\008' | '\127' ->
+            (* backspace *)
+            let len = Buffer.length buf in
+            if len > 0 then Buffer.truncate buf (len - 1)
+        | '\027' ->
+            (* ESC to cancel *)
+            Buffer.reset buf;
+            finished := true
+        | c ->
+            if
+              (c >= 'a' && c <= 'z')
+              || (c >= 'A' && c <= 'Z')
+              || (c >= '0' && c <= '9')
+              || c = '_' || c = '-' || c = '.'
+            then
+              Buffer.add_char buf c
+            else
+              ()
+      )
+    with
+    | Graphics.Graphic_failure msg ->
+        prerr_endline ("Graphics closed in prompt_filename_ui: " ^ msg);
+        finished := true
+    | exn ->
+        log_exception "prompt_filename_ui" exn;
+        finished := true
+  done;
+  Buffer.contents buf
+
 (** [usage ()] outputs the intended command line command format to run the
     program as intended *)
 let usage () =
@@ -456,13 +515,13 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
               button_height
           then (
             add_message
-              "Press 'f' to apply or 'r' to reset.";
+              "Press 'f' to apply or 'r' to reset. Enter fill color (R G B) in \
+               terminal:";
             add_message
-              "Then click two opposite corners to fill a square \
+              "Fill tool selected! Click two opposite corners to fill a square \
                or three or more points to fill a polygon.";
             add_message
-              "Please enter three integers between 0 and 255 in the terminal separated by spaces.";
-            add_message "Fill Tool Selected!";
+              "Please enter three integers between 0 and 255 in the terminal.";
             let input = read_line () in
             let rgb_vals =
               try List.map int_of_string (String.split_on_char ' ' input)
@@ -684,20 +743,27 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
               button_height
           then (
             add_message
-              "Save tool selected! Enter filename (without extension): ";
-            let filename = read_line () in
-            add_message "Saving as PNG...";
+              "Save tool selected! Type filename in panel, ENTER to confirm, \
+               ESC to cancel.";
+            let filename = prompt_filename_ui () in
+            if filename = "" then (
+              add_message "Save cancelled.";
+              Unix.sleepf 0.2;
+              event_loop current_tool
+            ) else (
+              add_message "Saving as PNG...";
 
-            let pixels_to_save =
-              if !brightness_level = 0 then !img_data
-              else adjust_brightness !img_data !brightness_level
-            in
-            FinalProject.FileSaver.save_image_to_png pixels_to_save
-              (filename ^ ".png");
+              let pixels_to_save =
+                if !brightness_level = 0 then !img_data
+                else adjust_brightness !img_data !brightness_level
+              in
+              FinalProject.FileSaver.save_image_to_png pixels_to_save
+                (filename ^ ".png");
 
-            add_message (Printf.sprintf "Image saved as %s.png" filename);
-            Unix.sleepf 0.2;
-            event_loop "save")
+              add_message (Printf.sprintf "Image saved as %s.png" filename);
+              Unix.sleepf 0.2;
+              event_loop "save"
+            ))
           else if
             is_point_in_rect screen_x screen_y toolbar_x reset_y button_width
               button_height
@@ -912,14 +978,14 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             let fill_data = fill_square !img_data p1 p2 !fill_color in
             push_undo ();
             img_data := fill_data;
-            add_message "Applying square fill.")
+            add_message "Applying square fill.\n")
           else begin
             let fill_data =
               fill !img_data (List.rev !clicked_points) !fill_color
             in
             push_undo ();
             img_data := fill_data;
-            add_message "Fill applied with points:";
+            add_message "Fill applied with points:\n";
             List.iter
               (fun (x, y) ->
                 add_message
@@ -972,19 +1038,26 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           add_message "Points reset.";
           event_loop current_tool (* Save: 's' *))
         else if key = 's' then (
-          add_message "Save (keyboard): Enter filename (without extension): ";
-          let filename = read_line () in
-          add_message "Saving as PNG...";
+          add_message
+            "Save (keyboard): Type filename in panel, ENTER to confirm, ESC to \
+             cancel.";
+          let filename = prompt_filename_ui () in
+          if filename = "" then (
+            add_message "Save cancelled.";
+            event_loop current_tool
+          ) else (
+            add_message "Saving as PNG...";
 
-          let pixels_to_save =
-            if !brightness_level = 0 then !img_data
-            else adjust_brightness !img_data !brightness_level
-          in
-          FinalProject.FileSaver.save_image_to_png pixels_to_save
-            (filename ^ ".png");
+            let pixels_to_save =
+              if !brightness_level = 0 then !img_data
+              else adjust_brightness !img_data !brightness_level
+            in
+            FinalProject.FileSaver.save_image_to_png pixels_to_save
+              (filename ^ ".png");
 
-          add_message (Printf.sprintf "Image saved as %s.png" filename);
-          event_loop "save"
+            add_message (Printf.sprintf "Image saved as %s.png" filename);
+            event_loop "save"
+          )
           (* Zoom in: '+' *))
         else if key = '=' || key = '+' then
           if !zoom_level >= 3 then event_loop current_tool
