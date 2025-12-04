@@ -6,6 +6,9 @@ let white = Graphics.rgb 255 255 255
 
 (*Helper function used to make a grey-scaled pixel*)
 let c v = Graphics.rgb v v v
+let r p = (p lsr 16) land 0xFF
+let g p = (p lsr 8) land 0xFF
+let b p = p land 0xFF
 
 let tests =
   "ImageOps Tests"
@@ -82,6 +85,32 @@ let tests =
            let img = [| [| p1; p2 |]; [| p2; p1 |] |] in
            let result = invert_colors (invert_colors img) in
            assert_equal img result );
+         ( "Test grayscale makes pixels gray" >:: fun _ ->
+           let p1 = Graphics.rgb 10 20 30 in
+           let p2 = Graphics.rgb 200 150 100 in
+           let img = [| [| p1; p2 |]; [| p2; p1 |] |] in
+           let result = grayscale img in
+           assert_equal 2 (Array.length result);
+           assert_equal 2 (Array.length result.(0));
+           Array.iter
+             (fun row ->
+               Array.iter
+                 (fun p ->
+                   let rr = r p and gg = g p and bb = b p in
+                   assert_bool "grayscale: r = g = b" (rr = gg && gg = bb))
+                 row)
+             result );
+         ( "Test grayscale on already gray image is identity" >:: fun _ ->
+           let img = [| [| c 10; c 20 |]; [| c 30; c 40 |] |] in
+           let result = grayscale img in
+           assert_equal img result );
+         ( "Test grayscale is idempotent" >:: fun _ ->
+           let p1 = Graphics.rgb 5 100 200 in
+           let p2 = Graphics.rgb 250 10 60 in
+           let img = [| [| p1; p2 |]; [| p2; p1 |] |] in
+           let once = grayscale img in
+           let twice = grayscale once in
+           assert_equal once twice );
          ( "Test cut_square" >:: fun _ ->
            let result =
              cut_square [| [| 0; 12 |]; [| 42; 3110 |] |] (0, 0) (1, 1)
