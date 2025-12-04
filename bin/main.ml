@@ -456,13 +456,13 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
               button_height
           then (
             add_message
-              "Press 'f' to apply or 'r' to reset. Enter fill color (R G B) in \
-               terminal:";
+              "Press 'f' to apply or 'r' to reset.";
             add_message
-              "Fill tool selected! Click two opposite corners to fill a square \
+              "Then click two opposite corners to fill a square \
                or three or more points to fill a polygon.";
             add_message
-              "Please enter three integers between 0 and 255 in the terminal.";
+              "Please enter three integers between 0 and 255 in the terminal separated by spaces.";
+            add_message "Fill Tool Selected!";
             let input = read_line () in
             let rgb_vals =
               try List.map int_of_string (String.split_on_char ' ' input)
@@ -912,14 +912,14 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             let fill_data = fill_square !img_data p1 p2 !fill_color in
             push_undo ();
             img_data := fill_data;
-            add_message "Applying square fill.\n")
+            add_message "Applying square fill.")
           else begin
             let fill_data =
               fill !img_data (List.rev !clicked_points) !fill_color
             in
             push_undo ();
             img_data := fill_data;
-            add_message "Fill applied with points:\n";
+            add_message "Fill applied with points:";
             List.iter
               (fun (x, y) ->
                 add_message
