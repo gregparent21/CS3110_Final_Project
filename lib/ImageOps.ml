@@ -370,3 +370,10 @@ let pixelate (data : int array array) (factor : int) : int array array =
     done;
     data)
   else data
+
+let rotate_90 (data : int array array) : int array array =
+  let h = Array.length data in
+  if h = 0 then [||]
+  else
+    let w = Array.length data.(0) in
+    Array.init w (fun i -> Array.init h (fun j -> data.(h - 1 - j).(i)))

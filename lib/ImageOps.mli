@@ -77,3 +77,7 @@ val pixelate : int array array -> int -> int array array
    pixelation factor of 2 will average out the RGB value of a 2x2 area and set
    all pixels in that area to that RGB value. This will repeat throughout the
    entire image.*)
+
+val rotate_90 : int array array -> int array array
+(** [rotate_90 img] returns a new image that is the original rotated 90 degrees
+    clockwise. *)

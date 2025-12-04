@@ -423,6 +423,16 @@ let tests =
            let img = [| [| 1 |]; [| 2 |] |] in
            assert_raises (Failure "Paste operation out of bounds") (fun () ->
                ignore (paste base img (0, 2))) );
+         ( "Test rotate_90 2x3 -> 3x2" >:: fun _ ->
+           let img = [| [| 1; 2; 3 |]; [| 4; 5; 6 |] |] in
+           let result = rotate_90 img in
+           let expected = [| [| 4; 1 |]; [| 5; 2 |]; [| 6; 3 |] |] in
+           assert_equal expected result );
+         ( "Test rotate_90 2x2" >:: fun _ ->
+           let img = [| [| 1; 2 |]; [| 3; 4 |] |] in
+           let result = rotate_90 img in
+           let expected = [| [| 3; 1 |]; [| 4; 2 |] |] in
+           assert_equal expected result );
        ]
 
 let _ = run_test_tt_main tests
