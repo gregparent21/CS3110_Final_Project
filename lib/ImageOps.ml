@@ -203,17 +203,17 @@ let average_neighbors (data : int array array) (factor : int) (x : int)
     (!avg_r lsl 16) lor (!avg_g lsl 8) lor !avg_b
 
 let%test "average_neighbors on a 1x1 image" =
-  let p = Graphics.rgb 50 60 70 in
-  let data = [| [| p |] |] in
+  let p = (Graphics.rgb 50 60 70 [@coverage off]) in
+  let data = [| [| p |] |] [@coverage off] in
   (average_neighbors data 1 0 0 = p) [@coverage off]
 
 let%test "average_neighbors on a 2x2 image" =
-  let a = Graphics.rgb 10 20 30 in
-  let b = Graphics.rgb 20 30 40 in
-  let c = Graphics.rgb 30 40 50 in
-  let d = Graphics.rgb 40 50 60 in
-  let data = [| [| a; b |]; [| c; d |] |] in
-  let avg = Graphics.rgb 25 35 45 in
+  let a = (Graphics.rgb 10 20 30 [@coverage off]) in
+  let b = (Graphics.rgb 20 30 40 [@coverage off]) in
+  let c = (Graphics.rgb 30 40 50 [@coverage off]) in
+  let d = (Graphics.rgb 40 50 60 [@coverage off]) in
+  let data = [| [| a; b |]; [| c; d |] |] [@coverage off] in
+  let avg = (Graphics.rgb 25 35 45 [@coverage off]) in
   (average_neighbors data 2 0 0 = avg) [@coverage off]
 
 let shrink (data : int array array) : int array array =
