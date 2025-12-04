@@ -170,7 +170,7 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
     (win_h - message_panel_h);
 
   let button_y = win_h - 60 in
-  let button_w = 90 in
+  let button_w = 120 in
   let button_h = 40 in
 
   draw_button toolbar_x button_y button_w button_h "Fill" (current_tool = "fill");
@@ -200,11 +200,19 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
     (current_tool = "zoom_in");
   moveto (zoom_in_x + 5) (button_zoom_y + button_h + 5);
 
-  (* Draw Invert button *)
+  (* Draw Invert & Grayscale on the same row *)
   let button_invert_y = win_h - 300 in
+  let gray_x = toolbar_x + button_w + 10 in
+
+  (* Invert on left *)
   draw_button toolbar_x button_invert_y button_w button_h "Invert"
     (current_tool = "invert");
   moveto (toolbar_x + 5) (button_invert_y + button_h + 5);
+
+  (* Grayscale on right *)
+  draw_button gray_x button_invert_y button_w button_h "Grayscale"
+    (current_tool = "grayscale");
+  moveto (gray_x + 5) (button_invert_y + button_h + 5);
 
   (* Draw Mirror *)
   let button_mirror_y = win_h - 360 in
@@ -279,6 +287,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
   let paste_y = size_y () - 180 in
   let zoom_y = size_y () - 240 in
   let invert_y = size_y () - 300 in
+  let gray_x = toolbar_x + button_width + 10 in
   let mirror_y = size_y () - 360 in
   let crop_y = size_y () - 420 in
   let pixelate_y = size_y () - 480 in
@@ -455,8 +464,6 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             is_point_in_rect screen_x screen_y toolbar_x invert_y button_width
               button_height
           then (
-            add_message "Invert tool selected! Inverting colors.";
-
             (* Apply inversion to the current pixel data *)
             push_undo ();
             img_data := invert_colors !img_data;
@@ -473,6 +480,26 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             synchronize ();
             Unix.sleepf 0.2;
             event_loop "invert")
+          else if
+            is_point_in_rect screen_x screen_y gray_x invert_y button_width
+              button_height
+          then (
+            add_message
+              "Grayscale tool selected! Converting image to grayscale.";
+            push_undo ();
+            img_data := grayscale !img_data;
+            let new_img = Graphics.make_image !img_data in
+
+            let win_w = size_x () in
+            let win_h = size_y () in
+            clear_graph ();
+            draw_image new_img !img_x_ref !img_y_ref;
+            draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+            draw_toolbar win_w win_h toolbar_x "grayscale";
+            draw_message_panel win_w message_panel_h;
+            synchronize ();
+            Unix.sleepf 0.2;
+            event_loop "grayscale")
           else if
             is_point_in_rect screen_x screen_y toolbar_x mirror_y button_width
               button_height
