@@ -647,9 +647,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
         event_loop "crop")
       else if key = 'u' then (
         match !undo_stack with
-        | [] ->
-            add_message "Nothing to undo.";
-            event_loop current_tool
+        | [] -> event_loop current_tool
         | st :: rest ->
             undo_stack := rest;
             redo_stack := current_state () :: !redo_stack;
@@ -660,9 +658,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             event_loop current_tool)
       else if key = 'y' then (
         match !redo_stack with
-        | [] ->
-            add_message "Nothing to redo.";
-            event_loop current_tool
+        | [] -> event_loop current_tool
         | st :: rest ->
             redo_stack := rest;
             undo_stack := current_state () :: !undo_stack;
