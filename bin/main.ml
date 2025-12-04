@@ -686,8 +686,14 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
               "Save tool selected! Enter filename (without extension): ";
             let filename = read_line () in
             add_message "Saving as PNG...";
-            FinalProject.FileSaver.save_image_to_png !img_data
+
+            let pixels_to_save =
+              if !brightness_level = 0 then !img_data
+              else adjust_brightness !img_data !brightness_level
+            in
+            FinalProject.FileSaver.save_image_to_png pixels_to_save
               (filename ^ ".png");
+
             add_message (Printf.sprintf "Image saved as %s.png" filename);
             Unix.sleepf 0.2;
             event_loop "save")
@@ -939,7 +945,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           add_message
             (Printf.sprintf "Paste applied at point: (%d, %d)" (fst paste_point)
                (snd paste_point));
-          let new_img = Graphics.make_image pasted_data in
+          let new_img = make_display_image () in
           redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x
             current_tool !brightness_level;
 
@@ -954,7 +960,14 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           add_message "Save (keyboard): Enter filename (without extension): ";
           let filename = read_line () in
           add_message "Saving as PNG...";
-          FinalProject.FileSaver.save_image_to_png !img_data (filename ^ ".png");
+
+          let pixels_to_save =
+            if !brightness_level = 0 then !img_data
+            else adjust_brightness !img_data !brightness_level
+          in
+          FinalProject.FileSaver.save_image_to_png pixels_to_save
+            (filename ^ ".png");
+
           add_message (Printf.sprintf "Image saved as %s.png" filename);
           event_loop "save"
           (* Zoom in: '+' *))
