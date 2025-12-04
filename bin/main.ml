@@ -761,7 +761,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             add_message "Applying square cut.\n")
           else begin
             let cut_data = cut !img_data (List.rev !clicked_points) in
-            prev_cut := array_sub !img_data cut_data;
+            prev_cut := array_sub cut_data !img_data;
             push_undo ();
             img_data := cut_data;
             add_message "Cut applied with points:\n";
@@ -796,7 +796,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             let fill_data =
               fill !img_data (List.rev !clicked_points) !fill_color
             in
-            prev_cut := array_sub !img_data fill_data;
+            prev_cut := array_sub fill_data !img_data;
             push_undo ();
             img_data := fill_data;
             add_message "Fill applied with points:\n";
@@ -819,6 +819,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
         else if
           key = 'p' && current_tool = "paste" && List.length !clicked_points = 1
         then (
+          (* Currenlty assumes pasting only a square. *)
           let paste_point = List.hd !clicked_points in
           let pasted_data = paste !img_data !prev_cut paste_point in
           push_undo ();
