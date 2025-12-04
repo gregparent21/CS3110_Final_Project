@@ -39,6 +39,92 @@ let tests =
            let result = shrink img in
            let expected = [| [| c 25; c 85 |]; [| c 25; c 85 |] |] in
            assert_equal expected result );
+         ( "Test pixelate with factor 1 shouldn't change image" >:: fun _ ->
+           let img =
+             [|
+               [| c 10; c 20; c 50; c 60 |];
+               [| c 30; c 40; c 70; c 80 |];
+               [| c 10; c 20; c 50; c 60 |];
+               [| c 30; c 40; c 70; c 80 |];
+             |]
+           in
+           let expected = pixelate img 1 in
+           assert_equal expected img );
+         ( "Test pixelate with factor 0 shouldn't change image" >:: fun _ ->
+           let img =
+             [|
+               [| c 10; c 20; c 50; c 60 |];
+               [| c 30; c 40; c 70; c 80 |];
+               [| c 10; c 20; c 50; c 60 |];
+               [| c 30; c 40; c 70; c 80 |];
+             |]
+           in
+           let expected = pixelate img 0 in
+           assert_equal expected img );
+         ( "Test pixelate on a rectangle 3x5" >:: fun _ ->
+           let img =
+             [|
+               [| c 10; c 20; c 30; c 40; c 50 |];
+               [| c 15; c 25; c 35; c 45; c 55 |];
+               [| c 60; c 70; c 80; c 90; c 100 |];
+             |]
+           in
+           let b1 = c (70 / 4) in
+           let b2 = c (150 / 4) in
+           let b3_top = c (105 / 4) in
+           let b4 = c (130 / 4) in
+           let b5 = c (170 / 4) in
+           let b6 = c (100 / 4) in
+           let _ = pixelate img 2 in
+           let expected =
+             [|
+               [| b1; b1; b2; b2; b3_top |];
+               [| b1; b1; b2; b2; b3_top |];
+               [| b4; b4; b5; b5; b6 |];
+             |]
+           in
+           assert_equal expected img );
+         ( "Test pixelate with a factor larger than the dimensions" >:: fun _ ->
+           let img =
+             [|
+               [| c 10; c 10; c 10; c 10 |];
+               [| c 10; c 10; c 10; c 10 |];
+               [| c 10; c 10; c 10; c 10 |];
+               [| c 10; c 10; c 10; c 10 |];
+             |]
+           in
+           let _ = pixelate img 10 in
+           let block1 = c (160 / 100) in
+           let expected =
+             [|
+               [| block1; block1; block1; block1 |];
+               [| block1; block1; block1; block1 |];
+               [| block1; block1; block1; block1 |];
+               [| block1; block1; block1; block1 |];
+             |]
+           in
+           assert_equal expected img );
+         ( "Test pixelate 3x3 with factor of 2" >:: fun _ ->
+           let img =
+             [|
+               [| c 10; c 20; c 30 |];
+               [| c 40; c 50; c 60 |];
+               [| c 70; c 80; c 90 |];
+             |]
+           in
+           let _ = pixelate img 2 in
+           let block1 = c (120 / 4) in
+           let block2 = c (90 / 4) in
+           let block3 = c (150 / 4) in
+           let block4 = c (90 / 4) in
+           let expected =
+             [|
+               [| block1; block1; block2 |];
+               [| block1; block1; block2 |];
+               [| block3; block3; block4 |];
+             |]
+           in
+           assert_equal expected img );
          ( "Test pixelate (factor 2)" >:: fun _ ->
            let img =
              [|
@@ -60,6 +146,21 @@ let tests =
              |]
            in
            assert_equal expected img );
+         ( "pixelate should do in-place mutation" >:: fun _ ->
+           let img = [| [| c 10 |] |] in
+           let result = pixelate img 0 in
+           assert_bool "pixelate should mutate in place" (img == result) );
+         ( "pixelate with a negative factor should return the same image"
+         >:: fun _ ->
+           let img = [| [| c 10 |] |] in
+           let _ = pixelate img (-10) in
+           let expected = [| [| c 10 |] |] in
+           assert_equal img expected );
+         ( "pixelate on an empty image should return the same image" >:: fun _ ->
+           let img = [| [||] |] in
+           let _ = pixelate img 2 in
+           let expected = [| [||] |] in
+           assert_equal img expected );
          ( "Test mirror (alias flip_horizontal)" >:: fun _ ->
            let img = [| [| 10; 20 |]; [| 30; 40 |] |] in
            let result = flip_horizontal img in
