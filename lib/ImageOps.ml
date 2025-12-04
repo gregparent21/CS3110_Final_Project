@@ -273,6 +273,20 @@ let invert_colors (data : int array array) : int array array =
         row)
     data
 
+let grayscale (data : int array array) : int array array =
+  Array.map
+    (fun row ->
+      Array.map
+        (fun p ->
+          let r = r p in
+          let g = g p in
+          let b = b p in
+          (* integer approximation of 0.3R + 0.59G + 0.11B *)
+          let y = ((30 * r) + (59 * g) + (11 * b)) / 100 in
+          Graphics.rgb y y y)
+        row)
+    data
+
 let flip_horizontal (img : int array array) : int array array =
   let height = Array.length img in
   if height = 0 then img

@@ -6,6 +6,9 @@ let white = Graphics.rgb 255 255 255
 
 (*Helper function used to make a grey-scaled pixel*)
 let c v = Graphics.rgb v v v
+let r p = (p lsr 16) land 0xFF
+let g p = (p lsr 8) land 0xFF
+let b p = p land 0xFF
 
 let tests =
   "ImageOps Tests"
@@ -82,6 +85,32 @@ let tests =
            let img = [| [| p1; p2 |]; [| p2; p1 |] |] in
            let result = invert_colors (invert_colors img) in
            assert_equal img result );
+         ( "Test grayscale makes pixels gray" >:: fun _ ->
+           let p1 = Graphics.rgb 10 20 30 in
+           let p2 = Graphics.rgb 200 150 100 in
+           let img = [| [| p1; p2 |]; [| p2; p1 |] |] in
+           let result = grayscale img in
+           assert_equal 2 (Array.length result);
+           assert_equal 2 (Array.length result.(0));
+           Array.iter
+             (fun row ->
+               Array.iter
+                 (fun p ->
+                   let rr = r p and gg = g p and bb = b p in
+                   assert_bool "grayscale: r = g = b" (rr = gg && gg = bb))
+                 row)
+             result );
+         ( "Test grayscale on already gray image is identity" >:: fun _ ->
+           let img = [| [| c 10; c 20 |]; [| c 30; c 40 |] |] in
+           let result = grayscale img in
+           assert_equal img result );
+         ( "Test grayscale is idempotent" >:: fun _ ->
+           let p1 = Graphics.rgb 5 100 200 in
+           let p2 = Graphics.rgb 250 10 60 in
+           let img = [| [| p1; p2 |]; [| p2; p1 |] |] in
+           let once = grayscale img in
+           let twice = grayscale once in
+           assert_equal once twice );
          ( "Test cut_square" >:: fun _ ->
            let result =
              cut_square [| [| 0; 12 |]; [| 42; 3110 |] |] (0, 0) (1, 1)
@@ -293,6 +322,124 @@ let tests =
            let b = [| [| 1; 2; 3 |]; [| 4; 5; 6 |] |] in
            assert_raises (Failure "Array Subtraction Error!") (fun () ->
                array_sub a b) );
+         ( "Test screen_to_image_coords" >:: fun _ ->
+           let ix, iy = screen_to_image_coords 130 70 100 50 in
+           assert_equal (30, 20) (ix, iy) );
+         ( "Test is_within_bounds" >:: fun _ ->
+           let w, h = (3, 2) in
+           assert_bool "0,0 in-bounds" (is_within_bounds 0 0 w h);
+           assert_bool "2,1 in-bounds" (is_within_bounds 2 1 w h);
+           assert_bool "-1,0 out-of-bounds" (not (is_within_bounds (-1) 0 w h));
+           assert_bool "3,0 out-of-bounds" (not (is_within_bounds 3 0 w h));
+           assert_bool "0,2 out-of-bounds" (not (is_within_bounds 0 2 w h)) );
+         ( "Test pixel_to_string" >:: fun _ ->
+           let s = pixel_to_string 10 20 30 in
+           assert_equal "RGB(10, 20, 30)" s );
+         ( "Test replace_color simple" >:: fun _ ->
+           let p1 = Graphics.rgb 10 20 30 in
+           let p2 = Graphics.rgb 40 50 60 in
+           let p3 = Graphics.rgb 70 80 90 in
+           let img = [| [| p1; p2 |]; [| p1; p3 |] |] in
+           let result = replace_color img (10, 20, 30) (0, 0, 0) in
+           let black = Graphics.rgb 0 0 0 in
+           let expected = [| [| black; p2 |]; [| black; p3 |] |] in
+           assert_equal expected result );
+         ( "Test enlarge 1x1 -> 2x2" >:: fun _ ->
+           let p = c 50 in
+           let img = [| [| p |] |] in
+           let result = enlarge img in
+           let expected = [| [| p; p |]; [| p; p |] |] in
+           assert_equal expected result );
+         ( "Test enlarge 2x2 -> 4x4" >:: fun _ ->
+           let a = c 10 in
+           let b = c 20 in
+           let c_ = c 30 in
+           let d = c 40 in
+           let img = [| [| a; b |]; [| c_; d |] |] in
+           let result = enlarge img in
+           let expected =
+             [|
+               [| a; a; b; b |];
+               [| a; a; b; b |];
+               [| c_; c_; d; d |];
+               [| c_; c_; d; d |];
+             |]
+           in
+           assert_equal expected result );
+         ( "Test shrink_then_enlarge_square_greyscale" >:: fun _ ->
+           let img =
+             [|
+               [| c 10; c 10; c 50; c 50 |];
+               [| c 10; c 10; c 50; c 50 |];
+               [| c 80; c 80; c 120; c 120 |];
+               [| c 80; c 80; c 120; c 120 |];
+             |]
+           in
+           let shrunk = shrink img in
+           let enlarged = enlarge shrunk in
+           (* Should give back exactly same image *)
+           assert_equal img enlarged );
+         ( "array_sub simple 2x2" >:: fun _ ->
+           let a = [| [| 5; 7 |]; [| 10; 0 |] |] in
+           let b = [| [| 1; 2 |]; [| 3; 4 |] |] in
+           let result = array_sub a b in
+           let expected = [| [| 4; 5 |]; [| 7; -4 |] |] in
+           assert_equal expected result );
+         ( "array_sub with zeros" >:: fun _ ->
+           let a = [| [| 1; 2; 3 |] |] in
+           let b = [| [| 0; 0; 0 |] |] in
+           let result = array_sub a b in
+           let expected = [| [| 1; 2; 3 |] |] in
+           assert_equal expected result );
+         ( "array_sub allows negative results" >:: fun _ ->
+           let a = [| [| 1; 2 |] |] in
+           let b = [| [| 3; 5 |] |] in
+           let result = array_sub a b in
+           let expected = [| [| -2; -3 |] |] in
+           assert_equal expected result );
+         ( "array_sub different row counts raises error" >:: fun _ ->
+           let a = [| [| 1; 2 |]; [| 3; 4 |] |] in
+           let b = [| [| 1; 2 |] |] in
+           assert_raises (Failure "Array Subtraction Error!") (fun () ->
+               ignore (array_sub a b)) );
+         ( "array_sub different column counts raises error" >:: fun _ ->
+           let a = [| [| 1; 2; 3 |] |] in
+           let b = [| [| 1; 2 |] |] in
+           assert_raises (Failure "Array Subtraction Error!") (fun () ->
+               ignore (array_sub a b)) );
+         ( "paste 2x2 into 3x3 at (1,1)" >:: fun _ ->
+           let base = [| [| 0; 0; 0 |]; [| 0; 0; 0 |]; [| 0; 0; 0 |] |] in
+           let img = [| [| 1; 2 |]; [| 3; 4 |] |] in
+           let result = paste base img (1, 1) in
+           let expected = [| [| 0; 0; 0 |]; [| 0; 1; 2 |]; [| 0; 3; 4 |] |] in
+           assert_equal expected result );
+         ( "paste 1x1 into corner" >:: fun _ ->
+           let base = [| [| 10; 11 |]; [| 20; 21 |] |] in
+           let img = [| [| 7 |] |] in
+           let result = paste base img (0, 0) in
+           let expected = [| [| 7; 11 |]; [| 20; 21 |] |] in
+           assert_equal expected result );
+         ( "paste along bottom row, right edge" >:: fun _ ->
+           let base = [| [| 0; 0; 0 |]; [| 0; 0; 0 |] |] in
+           let img = [| [| 5; 6 |] |] in
+           let result = paste base img (1, 1) in
+           let expected = [| [| 0; 0; 0 |]; [| 0; 5; 6 |] |] in
+           assert_equal expected result );
+         ( "paste negative coordinates raises error" >:: fun _ ->
+           let base = Array.make_matrix 3 3 0 in
+           let img = [| [| 1 |] |] in
+           assert_raises (Failure "Paste operation out of bounds") (fun () ->
+               ignore (paste base img (-1, 0))) );
+         ( "paste too far right raises error" >:: fun _ ->
+           let base = Array.make_matrix 3 3 0 in
+           let img = [| [| 1; 2 |] |] in
+           assert_raises (Failure "Paste operation out of bounds") (fun () ->
+               ignore (paste base img (2, 0))) );
+         ( "paste too far down raises error" >:: fun _ ->
+           let base = Array.make_matrix 3 3 0 in
+           let img = [| [| 1 |]; [| 2 |] |] in
+           assert_raises (Failure "Paste operation out of bounds") (fun () ->
+               ignore (paste base img (0, 2))) );
        ]
 
 let _ = run_test_tt_main tests

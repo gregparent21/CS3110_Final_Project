@@ -70,3 +70,14 @@ let graphics_image_of_file (path : string) : Graphics.image * int * int =
   let img = load_image_raw path in
   let w, h = image_dimensions img in
   (make_graphics_image img, w, h)
+
+(* Inline tests for CMYK -> RGB conversion *)
+let%test "cmyk_to_rgb_white" =
+  let px = { Color.c = 0; m = 0; y = 0; k = 0 } in
+  let rgb = cmyk_pixel_to_rgb px in 
+  rgb.Color.r = 255 && rgb.Color.g = 255 && rgb.Color.b = 255  [@coverage off]
+
+let%test "cmyk_to_rgb_black" =
+  let px = { Color.c = 0; m = 0; y = 0; k = 255 } in
+  let rgb = cmyk_pixel_to_rgb px in
+  rgb.Color.r = 0 && rgb.Color.g = 0 && rgb.Color.b = 0  [@coverage off]

@@ -2,12 +2,70 @@ open Graphics
 open FinalProject.ImageOps
 open FinalProject.ImageLoader
 
+(* Enable backtraces for better error diagnostics. *)
+let () = Printexc.record_backtrace true
+
 (* Bottom message panel height (pixels) *)
 let message_panel_h = 100
 
 (* Message buffer: keep most recent lines at bottom panel *)
 let messages : string list ref = ref []
 let pixel_fact = ref 2
+
+(* Record type to capture everything that changes when we edit *)
+type editor_state = {
+  pixels : int array array;
+  img_x : int;
+  img_y : int;
+  w : int;
+  h : int;
+}
+
+(* Generic exception logger that prints both to stderr and the message panel. *)
+let log_exception context exn =
+  match exn with
+  | Graphics.Graphic_failure msg ->
+      (* Special case: graphics screen is gone; do NOT attempt drawing. *)
+      prerr_endline ("Graphics error in " ^ context ^ ": " ^ msg)
+  | _ -> (
+      let exn_str = Printexc.to_string exn in
+      let msg = "Unexpected error in " ^ context ^ ": " ^ exn_str in
+      prerr_endline msg;
+      try
+        (* Try to log into the message panel. *)
+        messages := msg :: !messages;
+        let max_lines = 6 in
+        if List.length !messages > max_lines then (
+          let rec take n l =
+            if n <= 0 then []
+            else
+              match l with
+              | [] -> []
+              | x :: xs -> x :: take (n - 1) xs
+          in
+          messages := take max_lines !messages;
+          let win_w = try size_x () with _ -> 0 in
+          if win_w > 0 then (
+            let panel_h = message_panel_h in
+            set_color (rgb 245 245 245);
+            fill_rect 0 0 win_w panel_h;
+            set_color black;
+            draw_rect 0 0 win_w panel_h;
+            let line_h = 14 in
+            let margin = 8 in
+            let rec draw_lines ls idx =
+              match ls with
+              | [] -> ()
+              | hd :: tl ->
+                  let y = margin + (idx * line_h) in
+                  moveto margin y;
+                  draw_string hd;
+                  draw_lines tl (idx + 1)
+            in
+            let to_draw = List.rev !messages in
+            draw_lines to_draw 0;
+            synchronize ()))
+      with _ -> ())
 
 let draw_message_panel win_w _panel_h =
   let panel_h = message_panel_h in
@@ -117,7 +175,7 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
     (win_h - message_panel_h);
 
   let button_y = win_h - 60 in
-  let button_w = 90 in
+  let button_w = 120 in
   let button_h = 40 in
 
   draw_button toolbar_x button_y button_w button_h "Fill" (current_tool = "fill");
@@ -147,11 +205,19 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
     (current_tool = "zoom_in");
   moveto (zoom_in_x + 5) (button_zoom_y + button_h + 5);
 
-  (* Draw Invert button *)
+  (* Draw Invert & Grayscale on the same row *)
   let button_invert_y = win_h - 300 in
+  let gray_x = toolbar_x + button_w + 10 in
+
+  (* Invert on left *)
   draw_button toolbar_x button_invert_y button_w button_h "Invert"
     (current_tool = "invert");
   moveto (toolbar_x + 5) (button_invert_y + button_h + 5);
+
+  (* Grayscale on right *)
+  draw_button gray_x button_invert_y button_w button_h "Grayscale"
+    (current_tool = "grayscale");
+  moveto (gray_x + 5) (button_invert_y + button_h + 5);
 
   (* Draw Mirror *)
   let button_mirror_y = win_h - 360 in
@@ -226,6 +292,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
   let paste_y = size_y () - 180 in
   let zoom_y = size_y () - 240 in
   let invert_y = size_y () - 300 in
+  let gray_x = toolbar_x + button_width + 10 in
   let mirror_y = size_y () - 360 in
   let crop_y = size_y () - 420 in
   let pixelate_y = size_y () - 480 in
@@ -239,83 +306,246 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
   let w_ref = ref w in
   let h_ref = ref h in
 
+  (* Restore functionality*)
+  let undo_stack : editor_state list ref = ref [] in
+  let redo_stack : editor_state list ref = ref [] in
+
+  let current_state () =
+    {
+      pixels = Array.map Array.copy !img_data;
+      img_x = !img_x_ref;
+      img_y = !img_y_ref;
+      w = !w_ref;
+      h = !h_ref;
+    }
+  in
+
+  let restore_state st =
+    img_data := Array.map Array.copy st.pixels;
+    img_x_ref := st.img_x;
+    img_y_ref := st.img_y;
+    w_ref := st.w;
+    h_ref := st.h
+  in
+
+  let push_undo () =
+    undo_stack := current_state () :: !undo_stack;
+    redo_stack := []
+    (* clear redo on new action *)
+  in
+
   let rec event_loop current_tool =
-    let screen_x, screen_y = mouse_pos () in
-    let cur_w = !w_ref in
-    let cur_h = !h_ref in
-    if button_down () then
-      if !crop_confirm_mode then (
-        Unix.sleepf 0.2;
-        event_loop current_tool)
-      else if screen_x >= toolbar_x then
-        if
-          is_point_in_rect screen_x screen_y toolbar_x cut_y button_width
-            button_height
-        then (
-          add_message "Press 'c' to cut. Press 'r' to reset.";
-          add_message
-            "Cut tool selected! Click two opposite corners to a cut a square \
-             or three or more points to cut a polygon";
-          flush stdout;
+    try
+      let screen_x, screen_y = mouse_pos () in
+      let cur_w = !w_ref in
+      let cur_h = !h_ref in
+      if button_down () then
+        if !crop_confirm_mode then (
           Unix.sleepf 0.2;
-          event_loop "cut")
-        else if
-          is_point_in_rect screen_x screen_y toolbar_x fill_y button_width
-            button_height
-        then (
-          add_message
-            "Press 'f' to apply or 'r' to reset. Enter fill color (R G B) in \
-             terminal:";
-          add_message
-            "Fill tool selected! Click two opposite corners to fill a square \
-             or three or more points to fill a polygon.";
-          add_message
-            "Please enter three integers between 0 and 255 in the terminal.";
-          let input = read_line () in
-          let rgb_vals =
-            try List.map int_of_string (String.split_on_char ' ' input)
-            with Failure _ ->
-              add_message "Invalid input. Using default color (0, 0, 0).";
-              [ 0; 0; 0 ]
-          in
-          fill_color :=
-            Graphics.rgb
-              (List.nth rgb_vals 0 |> min 255 |> max 0)
-              (List.nth rgb_vals 1 |> min 255 |> max 0)
-              (List.nth rgb_vals 2 |> min 255 |> max 0);
-          flush stdout;
-          Unix.sleepf 0.2;
-          event_loop "fill")
-        else if
-          is_point_in_rect screen_x screen_y toolbar_x paste_y button_width
-            button_height
-        then (
-          add_message "Press 'p' to apply the paste and 'r' to reset.";
-          add_message
-            "Paste tool selected! Select the bottom left endpoint where you \
-             would like to paste the previous cut.";
-          Unix.sleepf 0.2;
-          event_loop "paste")
-        else if
-          is_point_in_rect screen_x screen_y toolbar_x zoom_y (button_width / 2)
-            button_height
-        then
-          if !zoom_level <= -3 then (
-            add_message "Cannot shrink further (zoom limit reached).";
+          event_loop current_tool)
+        else if screen_x >= toolbar_x then
+          if
+            is_point_in_rect screen_x screen_y toolbar_x cut_y button_width
+              button_height
+          then (
+            add_message "Press 'c' to cut. Press 'r' to reset.";
+            add_message
+              "Cut tool selected! Click two opposite corners to a cut a square \
+               or three or more points to cut a polygon";
+            flush stdout;
             Unix.sleepf 0.2;
-            event_loop current_tool)
-          else (
-            if !zoom_level = 0 then zoom_base := Array.map Array.copy !img_data;
+            event_loop "cut")
+          else if
+            is_point_in_rect screen_x screen_y toolbar_x fill_y button_width
+              button_height
+          then (
+            add_message
+              "Press 'f' to apply or 'r' to reset. Enter fill color (R G B) in \
+               terminal:";
+            add_message
+              "Fill tool selected! Click two opposite corners to fill a square \
+               or three or more points to fill a polygon.";
+            add_message
+              "Please enter three integers between 0 and 255 in the terminal.";
+            let input = read_line () in
+            let rgb_vals =
+              try List.map int_of_string (String.split_on_char ' ' input)
+              with Failure _ ->
+                add_message "Invalid input. Using default color (0, 0, 0).";
+                [ 0; 0; 0 ]
+            in
+            fill_color :=
+              Graphics.rgb
+                (List.nth rgb_vals 0 |> min 255 |> max 0)
+                (List.nth rgb_vals 1 |> min 255 |> max 0)
+                (List.nth rgb_vals 2 |> min 255 |> max 0);
+            flush stdout;
+            Unix.sleepf 0.2;
+            event_loop "fill")
+          else if
+            is_point_in_rect screen_x screen_y toolbar_x paste_y button_width
+              button_height
+          then (
+            add_message "Press 'p' to apply the paste and 'r' to reset.";
+            add_message
+              "Paste tool selected! Select the bottom left endpoint where you \
+               would like to paste the previous cut.";
+            Unix.sleepf 0.2;
+            event_loop "paste")
+          else if
+            is_point_in_rect screen_x screen_y toolbar_x zoom_y
+              (button_width / 2) button_height
+          then
+            if !zoom_level <= -3 then (
+              add_message "Cannot shrink further (zoom limit reached).";
+              Unix.sleepf 0.2;
+              event_loop current_tool)
+            else (
+              if !zoom_level = 0 then
+                zoom_base := Array.map Array.copy !img_data;
 
-            zoom_level := !zoom_level - 1;
+              zoom_level := !zoom_level - 1;
+              push_undo ();
+              img_data := apply_zoom !zoom_level !zoom_base;
 
-            img_data := apply_zoom !zoom_level !zoom_base;
+              let new_h = Array.length !img_data in
+              let new_w = if new_h = 0 then 0 else Array.length !img_data.(0) in
+              h_ref := new_h;
+              w_ref := new_w;
 
+              let win_w = size_x () in
+              let win_h = size_y () in
+              img_x_ref := (toolbar_x - !w_ref) / 2;
+              img_y_ref :=
+                message_panel_h + ((win_h - message_panel_h - !h_ref) / 2);
+
+              let new_img = Graphics.make_image !img_data in
+              clear_graph ();
+              draw_image new_img !img_x_ref !img_y_ref;
+              draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+              draw_toolbar win_w win_h toolbar_x "zoom_out";
+              draw_message_panel win_w message_panel_h;
+              synchronize ();
+              Unix.sleepf 0.2;
+              event_loop "zoom_out")
+          else if
+            is_point_in_rect screen_x screen_y
+              (toolbar_x + (button_width / 2) + 4)
+              zoom_y (button_width / 2) button_height
+          then
+            if !zoom_level >= 3 then (
+              add_message "Cannot enlarge further (zoom limit reached).";
+              Unix.sleepf 0.2;
+              event_loop current_tool)
+            else (
+              if !zoom_level = 0 then
+                zoom_base := Array.map Array.copy !img_data;
+
+              zoom_level := !zoom_level + 1;
+              push_undo ();
+              img_data := apply_zoom !zoom_level !zoom_base;
+
+              let new_h = Array.length !img_data in
+              let new_w = if new_h = 0 then 0 else Array.length !img_data.(0) in
+              h_ref := new_h;
+              w_ref := new_w;
+
+              let win_w = size_x () in
+              let win_h = size_y () in
+              img_x_ref := (toolbar_x - !w_ref) / 2;
+              img_y_ref :=
+                message_panel_h + ((win_h - message_panel_h - !h_ref) / 2);
+
+              let new_img = Graphics.make_image !img_data in
+              clear_graph ();
+              draw_image new_img !img_x_ref !img_y_ref;
+              draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+              draw_toolbar win_w win_h toolbar_x "zoom_in";
+              draw_message_panel win_w message_panel_h;
+              synchronize ();
+              Unix.sleepf 0.2;
+              event_loop "zoom_in")
+          else if
+            is_point_in_rect screen_x screen_y toolbar_x invert_y button_width
+              button_height
+          then (
+            (* Apply inversion to the current pixel data *)
+            push_undo ();
+            img_data := invert_colors !img_data;
+            let new_img = Graphics.make_image !img_data in
+
+            (* Redraw window with inverted image using current origin/size *)
+            let win_w = size_x () in
+            let win_h = size_y () in
+            clear_graph ();
+            draw_image new_img !img_x_ref !img_y_ref;
+            draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+            draw_toolbar win_w win_h toolbar_x "invert";
+            draw_message_panel win_w message_panel_h;
+            synchronize ();
+            Unix.sleepf 0.2;
+            event_loop "invert")
+          else if
+            is_point_in_rect screen_x screen_y gray_x invert_y button_width
+              button_height
+          then (
+            add_message
+              "Grayscale tool selected! Converting image to grayscale.";
+            push_undo ();
+            img_data := grayscale !img_data;
+            let new_img = Graphics.make_image !img_data in
+
+            let win_w = size_x () in
+            let win_h = size_y () in
+            clear_graph ();
+            draw_image new_img !img_x_ref !img_y_ref;
+            draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+            draw_toolbar win_w win_h toolbar_x "grayscale";
+            draw_message_panel win_w message_panel_h;
+            synchronize ();
+            Unix.sleepf 0.2;
+            event_loop "grayscale")
+          else if
+            is_point_in_rect screen_x screen_y toolbar_x mirror_y button_width
+              button_height
+          then (
+            push_undo ();
+            img_data := flip_horizontal !img_data;
+            let new_img = Graphics.make_image !img_data in
+            let win_w = size_x () in
+            let win_h = size_y () in
+            clear_graph ();
+            draw_image new_img !img_x_ref !img_y_ref;
+            draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+            draw_toolbar win_w win_h toolbar_x "mirror";
+            draw_message_panel win_w message_panel_h;
+            synchronize ();
+            Unix.sleepf 0.2;
+            event_loop "mirror")
+          else if
+            is_point_in_rect screen_x screen_y toolbar_x crop_y button_width
+              button_height
+          then (
+            crop_points := [];
+            add_message "Crop tool selected! Click two corners.";
+            Unix.sleepf 0.2;
+            event_loop "crop")
+          else if
+            is_point_in_rect screen_x screen_y toolbar_x pixelate_y button_width
+              button_height
+          then (
+            push_undo ();
+            img_data := pixelate !img_data !pixel_fact;
+
+            pixel_fact := !pixel_fact + 1;
+
+            (* update current width/height from the new data *)
             let new_h = Array.length !img_data in
             let new_w = if new_h = 0 then 0 else Array.length !img_data.(0) in
             h_ref := new_h;
             w_ref := new_w;
 
+            (* recenter image in the left area *)
             let win_w = size_x () in
             let win_h = size_y () in
             img_x_ref := (toolbar_x - !w_ref) / 2;
@@ -326,25 +556,305 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             clear_graph ();
             draw_image new_img !img_x_ref !img_y_ref;
             draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
-            draw_toolbar win_w win_h toolbar_x "zoom_out";
+            draw_toolbar win_w win_h toolbar_x "pixelate";
             draw_message_panel win_w message_panel_h;
             synchronize ();
             Unix.sleepf 0.2;
-            event_loop "zoom_out")
+            event_loop "pixelate")
+          else if
+            is_point_in_rect screen_x screen_y toolbar_x save_y button_width
+              button_height
+          then (
+            add_message
+              "Save tool selected! Enter filename (without extension): ";
+            let filename = read_line () in
+            add_message "Saving as PNG...";
+            FinalProject.FileSaver.save_image_to_png !img_data
+              (filename ^ ".png");
+            add_message (Printf.sprintf "Image saved as %s.png" filename);
+            Unix.sleepf 0.2;
+            event_loop "save")
+          else if
+            is_point_in_rect screen_x screen_y toolbar_x reset_y button_width
+              button_height
+          then (
+            (* Restore original pixel data and geometry *)
+            push_undo ();
+            img_data := Array.map Array.copy original_data;
+            w_ref := original_w;
+            h_ref := original_h;
+            img_x_ref := original_img_x;
+            img_y_ref := original_img_y;
+            zoom_level := 0;
+            zoom_base := Array.map Array.copy !img_data;
+            pixel_fact := 2;
+
+            let win_w = size_x () in
+            let win_h = size_y () in
+            let new_img = Graphics.make_image !img_data in
+            clear_graph ();
+            draw_image new_img !img_x_ref !img_y_ref;
+            draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+            draw_toolbar win_w win_h toolbar_x "reset";
+            draw_message_panel win_w message_panel_h;
+            add_message "Image reset to original.";
+            synchronize ();
+            Unix.sleepf 0.2;
+            event_loop "reset")
+          else (
+            Unix.sleepf 0.2;
+            event_loop current_tool)
+        else
+          (* Click on image *)
+          let img_px, img_py =
+            screen_to_image_coords screen_x screen_y !img_x_ref !img_y_ref
+          in
+          if
+            (current_tool = "cut" || current_tool = "fill"
+           || current_tool = "paste")
+            && is_within_bounds img_px img_py cur_w cur_h
+          then (
+            clicked_points := (img_px, img_py) :: !clicked_points;
+            add_message
+              (Printf.sprintf "Point added: (%d, %d). Total: %d" img_px img_py
+                 (List.length !clicked_points));
+            Unix.sleepf 0.2;
+            event_loop current_tool)
+          else if
+            current_tool = "crop" && (not !crop_confirm_mode)
+            && is_within_bounds img_px img_py cur_w cur_h
+          then (
+            crop_points := (img_px, img_py) :: !crop_points;
+
+            (* Small red dot at corner*)
+            set_color (rgb 255 0 0);
+            fill_circle screen_x screen_y 4;
+            synchronize ();
+
+            if List.length !crop_points = 2 then (
+              crop_confirm_mode := true;
+
+              let p1, p2 =
+                match !crop_points with
+                | [ a; b ] -> (a, b)
+                | _ -> failwith "impossible crop_points length"
+              in
+
+              (* redraw image + rectangle preview *)
+              let win_w = size_x () in
+              let win_h = size_y () in
+              let img = Graphics.make_image !img_data in
+
+              clear_graph ();
+              draw_image img !img_x_ref !img_y_ref;
+              draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+              draw_toolbar win_w win_h toolbar_x "crop";
+
+              let sx1 = !img_x_ref + fst p1 in
+              let sy1 = !img_y_ref + snd p1 in
+              let sx2 = !img_x_ref + fst p2 in
+              let sy2 = !img_y_ref + snd p2 in
+              let left = min sx1 sx2 in
+              let right = max sx1 sx2 in
+              let bottom = min sy1 sy2 in
+              let top = max sy1 sy2 in
+
+              set_color (rgb 255 0 0);
+              draw_rect left bottom (right - left) (top - bottom);
+
+              draw_message_panel win_w message_panel_h;
+              add_message "Press 'c' to confirm crop, 'r' to cancel.";
+              synchronize ();
+
+              event_loop "crop")
+            else (
+              Unix.sleepf 0.2;
+              event_loop current_tool))
+          else (
+            add_message "No tool selected or click outside bounds";
+            Unix.sleepf 0.2;
+            event_loop current_tool)
+      else if key_pressed () then
+        let key = read_key () in
+        if key = 'c' && current_tool = "crop" && !crop_confirm_mode then (
+          match List.rev !crop_points with
+          | p1 :: p2 :: _ ->
+              push_undo ();
+              img_data := crop !img_data p1 p2;
+
+              let new_h = Array.length !img_data in
+              let new_w = Array.length !img_data.(0) in
+              h_ref := new_h;
+              w_ref := new_w;
+
+              let win_w = size_x () in
+              let win_h = size_y () in
+              img_x_ref := (toolbar_x - !w_ref) / 2;
+              img_y_ref :=
+                message_panel_h + ((win_h - message_panel_h - !h_ref) / 2);
+
+              let new_img = Graphics.make_image !img_data in
+              clear_graph ();
+              draw_image new_img !img_x_ref !img_y_ref;
+              draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+              draw_toolbar win_w win_h toolbar_x "crop";
+              draw_message_panel win_w message_panel_h;
+              synchronize ();
+
+              crop_points := [];
+              crop_confirm_mode := false;
+              add_message "Crop applied.";
+              event_loop ""
+          | _ ->
+              crop_points := [];
+              crop_confirm_mode := false;
+              add_message "Crop cancelled (invalid points).";
+              event_loop "crop")
+        else if key = 'r' && current_tool = "crop" && !crop_confirm_mode then (
+          (* cancel any pending crop *)
+          crop_points := [];
+          crop_confirm_mode := false;
+          let win_w = size_x () in
+          let win_h = size_y () in
+          let img = Graphics.make_image !img_data in
+          clear_graph ();
+          draw_image img !img_x_ref !img_y_ref;
+          draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+          draw_toolbar win_w win_h toolbar_x "crop";
+          draw_message_panel win_w message_panel_h;
+          add_message "Crop cancelled.";
+          synchronize ();
+          event_loop "crop")
+        else if key = 'u' then (
+          match !undo_stack with
+          | [] -> event_loop current_tool
+          | st :: rest ->
+              undo_stack := rest;
+              redo_stack := current_state () :: !redo_stack;
+              restore_state st;
+              let new_img = Graphics.make_image !img_data in
+              redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x "";
+              add_message "Undo.";
+              event_loop current_tool)
+        else if key = 'y' then (
+          match !redo_stack with
+          | [] -> event_loop current_tool
+          | st :: rest ->
+              redo_stack := rest;
+              undo_stack := current_state () :: !undo_stack;
+              restore_state st;
+              let new_img = Graphics.make_image !img_data in
+              redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x "";
+              add_message "Redo.";
+              event_loop current_tool)
         else if
-          is_point_in_rect screen_x screen_y
-            (toolbar_x + (button_width / 2) + 4)
-            zoom_y (button_width / 2) button_height
-        then
+          key = 'c' && current_tool = "cut" && List.length !clicked_points >= 2
+        then (
+          if List.length !clicked_points = 2 then (
+            let pts = List.rev !clicked_points in
+            let p1 = List.nth pts 0 in
+            let p2 = List.nth pts 1 in
+            let cut_data = cut_square !img_data p1 p2 in
+            prev_cut := array_sub !img_data cut_data;
+            push_undo ();
+            img_data := cut_data;
+            add_message "Applying square cut.\n")
+          else begin
+            let cut_data = cut !img_data (List.rev !clicked_points) in
+            prev_cut := array_sub !img_data cut_data;
+            push_undo ();
+            img_data := cut_data;
+            add_message "Cut applied with points:\n";
+            List.iter
+              (fun (x, y) ->
+                add_message
+                  ("(" ^ string_of_int x ^ ", " ^ string_of_int y ^ ")"))
+              (List.rev !clicked_points);
+            flush stdout
+          end;
+
+          let new_img = Graphics.make_image !img_data in
+          redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x
+            current_tool;
+
+          clicked_points := [];
+          add_message "Points reset. Select a tool and continue.";
+          event_loop "")
+        else if
+          key = 'f' && current_tool = "fill" && List.length !clicked_points >= 2
+        then (
+          if List.length !clicked_points = 2 then (
+            let pts = List.rev !clicked_points in
+            let p1 = List.nth pts 0 in
+            let p2 = List.nth pts 1 in
+            let fill_data = fill_square !img_data p1 p2 !fill_color in
+            prev_cut := array_sub !img_data fill_data;
+            push_undo ();
+            img_data := fill_data;
+            add_message "Applying square fill.\n")
+          else begin
+            let fill_data =
+              fill !img_data (List.rev !clicked_points) !fill_color
+            in
+            prev_cut := array_sub !img_data fill_data;
+            push_undo ();
+            img_data := fill_data;
+            add_message "Fill applied with points:\n";
+            List.iter
+              (fun (x, y) ->
+                add_message
+                  ("(" ^ string_of_int x ^ ", " ^ string_of_int y ^ ")"))
+              (List.rev !clicked_points);
+            flush stdout
+          end;
+
+          let new_img = Graphics.make_image !img_data in
+          redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x
+            current_tool;
+
+          fill_color := Graphics.rgb 0 0 0;
+          clicked_points := [];
+          add_message "Points reset. Select a tool and continue.";
+          event_loop "")
+        else if
+          key = 'p' && current_tool = "paste" && List.length !clicked_points = 1
+        then (
+          let paste_point = List.hd !clicked_points in
+          let pasted_data = paste !img_data !prev_cut paste_point in
+          push_undo ();
+          img_data := pasted_data;
+          add_message
+            (Printf.sprintf "Paste applied at point: (%d, %d)" (fst paste_point)
+               (snd paste_point));
+
+          let new_img = Graphics.make_image pasted_data in
+          redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x
+            current_tool;
+
+          clicked_points := [];
+          add_message "Points reset. Select a tool and continue.";
+          event_loop "" (* point reset (tool command) *))
+        else if key = 'r' then (
+          clicked_points := [];
+          add_message "Points reset.";
+          event_loop current_tool (* Save: 's' *))
+        else if key = 's' then (
+          add_message "Save (keyboard): Enter filename (without extension): ";
+          let filename = read_line () in
+          add_message "Saving as PNG...";
+          FinalProject.FileSaver.save_image_to_png !img_data (filename ^ ".png");
+          add_message (Printf.sprintf "Image saved as %s.png" filename);
+          event_loop "save"
+          (* Zoom in: '+' *))
+        else if key = '=' || key = '+' then
           if !zoom_level >= 3 then (
             add_message "Cannot enlarge further (zoom limit reached).";
-            Unix.sleepf 0.2;
             event_loop current_tool)
           else (
             if !zoom_level = 0 then zoom_base := Array.map Array.copy !img_data;
 
             zoom_level := !zoom_level + 1;
-
+            push_undo ();
             img_data := apply_zoom !zoom_level !zoom_base;
 
             let new_h = Array.length !img_data in
@@ -365,102 +875,41 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             draw_toolbar win_w win_h toolbar_x "zoom_in";
             draw_message_panel win_w message_panel_h;
             synchronize ();
-            Unix.sleepf 0.2;
-            event_loop "zoom_in")
-        else if
-          is_point_in_rect screen_x screen_y toolbar_x invert_y button_width
-            button_height
-        then (
-          add_message "Invert tool selected! Inverting colors.";
+            event_loop "zoom_in"
+            (* Zoom out: '-' *))
+        else if key = '-' then
+          if !zoom_level <= -3 then (
+            add_message "Cannot shrink further (zoom limit reached).";
+            event_loop current_tool)
+          else (
+            if !zoom_level = 0 then zoom_base := Array.map Array.copy !img_data;
 
-          (* Apply inversion to the current pixel data *)
-          img_data := invert_colors !img_data;
-          let new_img = Graphics.make_image !img_data in
+            zoom_level := !zoom_level - 1;
+            push_undo ();
+            img_data := apply_zoom !zoom_level !zoom_base;
 
-          (* Redraw window with inverted image using current origin/size *)
-          let win_w = size_x () in
-          let win_h = size_y () in
-          clear_graph ();
-          draw_image new_img !img_x_ref !img_y_ref;
-          draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
-          draw_toolbar win_w win_h toolbar_x "invert";
-          draw_message_panel win_w message_panel_h;
-          synchronize ();
-          Unix.sleepf 0.2;
-          event_loop "invert")
-        else if
-          is_point_in_rect screen_x screen_y toolbar_x mirror_y button_width
-            button_height
-        then (
-          add_message "Mirror tool selected! Flipping horizontally.";
+            let new_h = Array.length !img_data in
+            let new_w = if new_h = 0 then 0 else Array.length !img_data.(0) in
+            h_ref := new_h;
+            w_ref := new_w;
 
-          img_data := flip_horizontal !img_data;
-          let new_img = Graphics.make_image !img_data in
-          let win_w = size_x () in
-          let win_h = size_y () in
-          clear_graph ();
-          draw_image new_img !img_x_ref !img_y_ref;
-          draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
-          draw_toolbar win_w win_h toolbar_x "mirror";
-          draw_message_panel win_w message_panel_h;
-          synchronize ();
-          Unix.sleepf 0.2;
-          event_loop "mirror")
-        else if
-          is_point_in_rect screen_x screen_y toolbar_x crop_y button_width
-            button_height
-        then (
-          crop_points := [];
-          add_message "Crop tool selected! Click two corners.";
-          Unix.sleepf 0.2;
-          event_loop "crop")
-        else if
-          is_point_in_rect screen_x screen_y toolbar_x pixelate_y button_width
-            button_height
-        then (
-          add_message "Pixelate tool selected! Pixelating image.";
+            let win_w = size_x () in
+            let win_h = size_y () in
+            img_x_ref := (toolbar_x - !w_ref) / 2;
+            img_y_ref :=
+              message_panel_h + ((win_h - message_panel_h - !h_ref) / 2);
 
-          img_data := pixelate !img_data !pixel_fact;
-
-          pixel_fact := !pixel_fact + 1;
-
-          (* update current width/height from the new data *)
-          let new_h = Array.length !img_data in
-          let new_w = if new_h = 0 then 0 else Array.length !img_data.(0) in
-          h_ref := new_h;
-          w_ref := new_w;
-
-          (* recenter image in the left area *)
-          let win_w = size_x () in
-          let win_h = size_y () in
-          img_x_ref := (toolbar_x - !w_ref) / 2;
-          img_y_ref := message_panel_h + ((win_h - message_panel_h - !h_ref) / 2);
-
-          let new_img = Graphics.make_image !img_data in
-          clear_graph ();
-          draw_image new_img !img_x_ref !img_y_ref;
-          draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
-          draw_toolbar win_w win_h toolbar_x "pixelate";
-          draw_message_panel win_w message_panel_h;
-          synchronize ();
-          Unix.sleepf 0.2;
-          event_loop "pixelate")
-        else if
-          is_point_in_rect screen_x screen_y toolbar_x save_y button_width
-            button_height
-        then (
-          add_message "Save tool selected! Enter filename (without extension): ";
-          let filename = read_line () in
-          add_message "Saving as PNG...";
-          FinalProject.FileSaver.save_image_to_png !img_data (filename ^ ".png");
-          add_message (Printf.sprintf "Image saved as %s.png" filename);
-          Unix.sleepf 0.2;
-          event_loop "save")
-        else if
-          is_point_in_rect screen_x screen_y toolbar_x reset_y button_width
-            button_height
-        then (
-          (* Restore original pixel data and geometry *)
+            let new_img = Graphics.make_image !img_data in
+            clear_graph ();
+            draw_image new_img !img_x_ref !img_y_ref;
+            draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+            draw_toolbar win_w win_h toolbar_x "zoom_out";
+            draw_message_panel win_w message_panel_h;
+            synchronize ();
+            event_loop "zoom_out"
+            (* Full reset: 'R' *))
+        else if key = 'R' then (
+          push_undo ();
           img_data := Array.map Array.copy original_data;
           w_ref := original_w;
           h_ref := original_h;
@@ -478,224 +927,25 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
           draw_toolbar win_w win_h toolbar_x "reset";
           draw_message_panel win_w message_panel_h;
-          add_message "Image reset to original.";
+          add_message "Image reset to original (keyboard).";
           synchronize ();
-          Unix.sleepf 0.2;
           event_loop "reset")
-        else (
-          Unix.sleepf 0.2;
-          event_loop current_tool)
-      else
-        (* Click on image *)
-        let img_px, img_py =
-          screen_to_image_coords screen_x screen_y !img_x_ref !img_y_ref
-        in
-        if
-          (current_tool = "cut" || current_tool = "fill"
-         || current_tool = "paste")
-          && is_within_bounds img_px img_py cur_w cur_h
-        then (
-          clicked_points := (img_px, img_py) :: !clicked_points;
-          add_message
-            (Printf.sprintf "Point added: (%d, %d). Total: %d" img_px img_py
-               (List.length !clicked_points));
-          Unix.sleepf 0.2;
-          event_loop current_tool)
-        else if
-          current_tool = "crop" && (not !crop_confirm_mode)
-          && is_within_bounds img_px img_py cur_w cur_h
-        then (
-          crop_points := (img_px, img_py) :: !crop_points;
-
-          (* Small red dot at corner*)
-          set_color (rgb 255 0 0);
-          fill_circle screen_x screen_y 4;
-          synchronize ();
-
-          if List.length !crop_points = 2 then (
-            crop_confirm_mode := true;
-
-            let p1, p2 =
-              match !crop_points with
-              | [ a; b ] -> (a, b)
-              | _ -> failwith "impossible crop_points length"
-            in
-
-            (* redraw image + rectangle preview *)
-            let win_w = size_x () in
-            let win_h = size_y () in
-            let img = Graphics.make_image !img_data in
-
-            clear_graph ();
-            draw_image img !img_x_ref !img_y_ref;
-            draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
-            draw_toolbar win_w win_h toolbar_x "crop";
-
-            let sx1 = !img_x_ref + fst p1 in
-            let sy1 = !img_y_ref + snd p1 in
-            let sx2 = !img_x_ref + fst p2 in
-            let sy2 = !img_y_ref + snd p2 in
-            let left = min sx1 sx2 in
-            let right = max sx1 sx2 in
-            let bottom = min sy1 sy2 in
-            let top = max sy1 sy2 in
-
-            set_color (rgb 255 0 0);
-            draw_rect left bottom (right - left) (top - bottom);
-
-            draw_message_panel win_w message_panel_h;
-            add_message "Press 'c' to confirm crop, 'r' to cancel.";
-            synchronize ();
-
-            event_loop "crop")
-          else (
-            Unix.sleepf 0.2;
-            event_loop current_tool))
-        else (
-          add_message "No tool selected or click outside bounds";
-          Unix.sleepf 0.2;
-          event_loop current_tool)
-    else if key_pressed () then
-      let key = read_key () in
-      if key = 'c' && current_tool = "crop" && !crop_confirm_mode then (
-        match List.rev !crop_points with
-        | p1 :: p2 :: _ ->
-            img_data := crop !img_data p1 p2;
-
-            let new_h = Array.length !img_data in
-            let new_w = Array.length !img_data.(0) in
-            h_ref := new_h;
-            w_ref := new_w;
-
-            let win_w = size_x () in
-            let win_h = size_y () in
-            img_x_ref := (toolbar_x - !w_ref) / 2;
-            img_y_ref :=
-              message_panel_h + ((win_h - message_panel_h - !h_ref) / 2);
-
-            let new_img = Graphics.make_image !img_data in
-            clear_graph ();
-            draw_image new_img !img_x_ref !img_y_ref;
-            draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
-            draw_toolbar win_w win_h toolbar_x "crop";
-            draw_message_panel win_w message_panel_h;
-            synchronize ();
-
-            crop_points := [];
-            crop_confirm_mode := false;
-            add_message "Crop applied.";
-            event_loop ""
-        | _ ->
-            crop_points := [];
-            crop_confirm_mode := false;
-            add_message "Crop cancelled (invalid points).";
-            event_loop "crop")
-      else if key = 'r' && current_tool = "crop" && !crop_confirm_mode then (
-        (* cancel any pending crop *)
-        crop_points := [];
-        crop_confirm_mode := false;
-        let win_w = size_x () in
-        let win_h = size_y () in
-        let img = Graphics.make_image !img_data in
-        clear_graph ();
-        draw_image img !img_x_ref !img_y_ref;
-        draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
-        draw_toolbar win_w win_h toolbar_x "crop";
-        draw_message_panel win_w message_panel_h;
-        add_message "Crop cancelled.";
-        synchronize ();
-        event_loop "crop")
-      else if
-        key = 'c' && current_tool = "cut" && List.length !clicked_points >= 2
-      then (
-        if List.length !clicked_points = 2 then (
-          let pts = List.rev !clicked_points in
-          let p1 = List.nth pts 0 in
-          let p2 = List.nth pts 1 in
-          let cut_data = cut_square !img_data p1 p2 in
-          prev_cut := array_sub !img_data cut_data;
-          img_data := cut_data;
-          add_message "Applying square cut.\n")
-        else begin
-          let cut_data = cut !img_data (List.rev !clicked_points) in
-          prev_cut := array_sub !img_data cut_data;
-          img_data := cut_data;
-          add_message "Cut applied with points:\n";
-          List.iter
-            (fun (x, y) ->
-              add_message ("(" ^ string_of_int x ^ ", " ^ string_of_int y ^ ")"))
-            (List.rev !clicked_points);
-          flush stdout
-        end;
-
-        let new_img = Graphics.make_image !img_data in
-        redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x
-          current_tool;
-
-        clicked_points := [];
-        add_message "Points reset. Select a tool and continue.";
-        event_loop "")
-      else if
-        key = 'f' && current_tool = "fill" && List.length !clicked_points >= 2
-      then (
-        if List.length !clicked_points = 2 then (
-          let pts = List.rev !clicked_points in
-          let p1 = List.nth pts 0 in
-          let p2 = List.nth pts 1 in
-          let fill_data = fill_square !img_data p1 p2 !fill_color in
-          prev_cut := array_sub !img_data fill_data;
-          img_data := fill_data;
-          add_message "Applying square fill.\n")
-        else begin
-          let fill_data =
-            fill !img_data (List.rev !clicked_points) !fill_color
-          in
-          prev_cut := array_sub !img_data fill_data;
-          img_data := fill_data;
-          add_message "Fill applied with points:\n";
-          List.iter
-            (fun (x, y) ->
-              add_message ("(" ^ string_of_int x ^ ", " ^ string_of_int y ^ ")"))
-            (List.rev !clicked_points);
-          flush stdout
-        end;
-
-        let new_img = Graphics.make_image !img_data in
-        redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x
-          current_tool;
-
-        fill_color := Graphics.rgb 0 0 0;
-        clicked_points := [];
-        add_message "Points reset. Select a tool and continue.";
-        event_loop "")
-      else if
-        key = 'p' && current_tool = "paste" && List.length !clicked_points = 1
-      then (
-        let paste_point = List.hd !clicked_points in
-        let pasted_data = paste !img_data !prev_cut paste_point in
-        img_data := pasted_data;
-        add_message
-          (Printf.sprintf "Paste applied at point: (%d, %d)" (fst paste_point)
-             (snd paste_point));
-
-        let new_img = Graphics.make_image pasted_data in
-        redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x
-          current_tool;
-
-        clicked_points := [];
-        add_message "Points reset. Select a tool and continue.";
-        event_loop "")
-      else if key = 'r' then (
-        clicked_points := [];
-        add_message "Points reset.";
+        else if key = 'q' then (
+          add_message "Exiting.";
+          exit 0)
+        else event_loop current_tool
+      else (
+        Unix.sleepf 0.01;
         event_loop current_tool)
-      else if key = 'q' then (
-        add_message "Exiting.";
-        exit 0)
-      else event_loop current_tool
-    else (
-      Unix.sleepf 0.01;
-      event_loop current_tool)
+    with exn -> (
+      match exn with
+      | Graphics.Graphic_failure msg ->
+          prerr_endline ("Graphics closed in event_loop: " ^ msg);
+          exit 0
+      | _ ->
+          log_exception "event_loop" exn;
+          Unix.sleepf 0.2;
+          event_loop current_tool)
   in
   event_loop ""
 
@@ -703,60 +953,91 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
     image-local coordinates of clicked pixels *)
 let handle_click img_x img_y w h =
   let rec click_loop () =
-    if button_down () then (
-      let screen_x, screen_y = mouse_pos () in
-      let img_px, img_py =
-        screen_to_image_coords screen_x screen_y img_x img_y
-      in
-      if is_within_bounds img_px img_py w h then
-        add_message
-          (Printf.sprintf "Clicked at image coordinates: (%d, %d)" img_px img_py)
-      else add_message "Click outside image bounds";
-      Unix.sleepf 0.2;
-      click_loop ())
-    else if key_pressed () then ignore (read_key ())
-    else (
-      Unix.sleepf 0.01;
-      click_loop ())
+    try
+      if button_down () then (
+        let screen_x, screen_y = mouse_pos () in
+        let img_px, img_py =
+          screen_to_image_coords screen_x screen_y img_x img_y
+        in
+        if is_within_bounds img_px img_py w h then
+          add_message
+            (Printf.sprintf "Clicked at image coordinates: (%d, %d)" img_px
+               img_py)
+        else add_message "Click outside image bounds";
+        Unix.sleepf 0.2;
+        click_loop ())
+      else if key_pressed () then ignore (read_key ())
+      else (
+        Unix.sleepf 0.01;
+        click_loop ())
+    with exn -> (
+      match exn with
+      | Graphics.Graphic_failure msg ->
+          prerr_endline ("Graphics closed in click_loop: " ^ msg);
+          exit 0
+      | _ ->
+          log_exception "click_loop" exn;
+          Unix.sleepf 0.2;
+          click_loop ())
   in
   click_loop ()
 
 let () =
-  if Array.length Sys.argv < 2 then usage ();
-  let path = Sys.argv.(1) in
+  try
+    if Array.length Sys.argv < 2 then usage ();
+    let path = Sys.argv.(1) in
 
-  if not (Sys.file_exists path) then (
-    Printf.printf "File not found: %s\n" path;
-    exit 1);
+    if not (Sys.file_exists path) then (
+      Printf.printf "File not found: %s\n" path;
+      exit 1);
 
-  open_graph " 1000x700";
-  set_window_title (Filename.basename path);
-  auto_synchronize false;
+    open_graph " 1000x700";
+    set_window_title (Filename.basename path);
+    auto_synchronize false;
 
-  (* Try to load the image *)
-  let img, w, h =
-    try graphics_image_of_file path
-    with e ->
-      Printf.printf "Failed to load image: %s\n" (Printexc.to_string e);
-      Printexc.print_backtrace stderr;
-      exit 1
-  in
+    (* Try to load the image *)
+    let img, w, h =
+      try graphics_image_of_file path
+      with e ->
+        Printf.printf "Failed to load image: %s\n" (Printexc.to_string e);
+        Printexc.print_backtrace stderr;
+        exit 1
+    in
 
-  let win_w = size_x () in
-  let win_h = size_y () in
-  let toolbar_x = 650 in
+    let win_w = size_x () in
+    let win_h = size_y () in
+    let toolbar_x = 650 in
 
-  clear_graph ();
-  let img_x = (toolbar_x - w) / 2 in
-  let img_y = message_panel_h + ((win_h - message_panel_h - h) / 2) in
-  draw_image img img_x img_y;
+    clear_graph ();
+    let img_x = (toolbar_x - w) / 2 in
+    let img_y = message_panel_h + ((win_h - message_panel_h - h) / 2) in
+    draw_image img img_x img_y;
 
-  (* Convert image to pixel array for cut operations *)
-  let data = ref (Graphics.dump_image img) in
+    (* Convert image to pixel array for cut operations *)
+    let data =
+      try ref (Graphics.dump_image img)
+      with e ->
+        log_exception "dump_image" e;
+        (* Fall back to a 0x0 image to avoid hard crash. *)
+        ref (Array.make_matrix 0 0 0)
+    in
 
-  draw_axes img_x img_y w h;
-  draw_toolbar win_w win_h toolbar_x "";
-  synchronize ();
-  add_message "Welcome to CamlShop!";
+    draw_axes img_x img_y w h;
+    draw_toolbar win_w win_h toolbar_x "";
+    synchronize ();
+    add_message "Welcome to CamlShop!";
+    add_message
+      "Keyboard: u = undo, y = redo, q = quit, +/- = zoom, s = save, R = reset.";
 
-  handle_buttons img_x img_y w h data toolbar_x
+    handle_buttons img_x img_y w h data toolbar_x
+  with exn -> (
+    match exn with
+    | Graphics.Graphic_failure msg ->
+        prerr_endline ("Graphics closed in main: " ^ msg);
+        exit 0
+    | _ ->
+        prerr_endline ("Fatal error in main: " ^ Printexc.to_string exn);
+        Printexc.print_backtrace stderr;
+        (try add_message "Fatal error occurred. Exiting CamlShop."
+         with _ -> ());
+        exit 1)
