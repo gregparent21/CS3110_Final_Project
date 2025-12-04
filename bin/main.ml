@@ -9,6 +9,15 @@ let message_panel_h = 100
 let messages : string list ref = ref []
 let pixel_fact = ref 2
 
+(* Record type to capture everything that changes when we edit *)
+type editor_state = {
+  pixels : int array array;
+  img_x : int;
+  img_y : int;
+  w : int;
+  h : int;
+}
+
 let draw_message_panel win_w _panel_h =
   let panel_h = message_panel_h in
   set_color (rgb 245 245 245);
@@ -239,6 +248,34 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
   let w_ref = ref w in
   let h_ref = ref h in
 
+  (* Restore functionality*)
+  let undo_stack : editor_state list ref = ref [] in
+  let redo_stack : editor_state list ref = ref [] in
+
+  let current_state () =
+    {
+      pixels = Array.map Array.copy !img_data;
+      img_x = !img_x_ref;
+      img_y = !img_y_ref;
+      w = !w_ref;
+      h = !h_ref;
+    }
+  in
+
+  let restore_state st =
+    img_data := Array.map Array.copy st.pixels;
+    img_x_ref := st.img_x;
+    img_y_ref := st.img_y;
+    w_ref := st.w;
+    h_ref := st.h
+  in
+
+  let push_undo () =
+    undo_stack := current_state () :: !undo_stack;
+    redo_stack := []
+    (* clear redo on new action *)
+  in
+
   let rec event_loop current_tool =
     let screen_x, screen_y = mouse_pos () in
     let cur_w = !w_ref in
@@ -308,7 +345,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             if !zoom_level = 0 then zoom_base := Array.map Array.copy !img_data;
 
             zoom_level := !zoom_level - 1;
-
+            push_undo ();
             img_data := apply_zoom !zoom_level !zoom_base;
 
             let new_h = Array.length !img_data in
@@ -344,7 +381,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             if !zoom_level = 0 then zoom_base := Array.map Array.copy !img_data;
 
             zoom_level := !zoom_level + 1;
-
+            push_undo ();
             img_data := apply_zoom !zoom_level !zoom_base;
 
             let new_h = Array.length !img_data in
@@ -374,6 +411,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           add_message "Invert tool selected! Inverting colors.";
 
           (* Apply inversion to the current pixel data *)
+          push_undo ();
           img_data := invert_colors !img_data;
           let new_img = Graphics.make_image !img_data in
 
@@ -393,7 +431,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             button_height
         then (
           add_message "Mirror tool selected! Flipping horizontally.";
-
+          push_undo ();
           img_data := flip_horizontal !img_data;
           let new_img = Graphics.make_image !img_data in
           let win_w = size_x () in
@@ -419,7 +457,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             button_height
         then (
           add_message "Pixelate tool selected! Pixelating image.";
-
+          push_undo ();
           img_data := pixelate !img_data !pixel_fact;
 
           pixel_fact := !pixel_fact + 1;
@@ -461,6 +499,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             button_height
         then (
           (* Restore original pixel data and geometry *)
+          push_undo ();
           img_data := Array.map Array.copy original_data;
           w_ref := original_w;
           h_ref := original_h;
@@ -560,6 +599,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
       if key = 'c' && current_tool = "crop" && !crop_confirm_mode then (
         match List.rev !crop_points with
         | p1 :: p2 :: _ ->
+            push_undo ();
             img_data := crop !img_data p1 p2;
 
             let new_h = Array.length !img_data in
@@ -605,6 +645,32 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
         add_message "Crop cancelled.";
         synchronize ();
         event_loop "crop")
+      else if key = 'u' then (
+        match !undo_stack with
+        | [] ->
+            add_message "Nothing to undo.";
+            event_loop current_tool
+        | st :: rest ->
+            undo_stack := rest;
+            redo_stack := current_state () :: !redo_stack;
+            restore_state st;
+            let new_img = Graphics.make_image !img_data in
+            redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x "";
+            add_message "Undo.";
+            event_loop current_tool)
+      else if key = 'y' then (
+        match !redo_stack with
+        | [] ->
+            add_message "Nothing to redo.";
+            event_loop current_tool
+        | st :: rest ->
+            redo_stack := rest;
+            undo_stack := current_state () :: !undo_stack;
+            restore_state st;
+            let new_img = Graphics.make_image !img_data in
+            redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x "";
+            add_message "Redo.";
+            event_loop current_tool)
       else if
         key = 'c' && current_tool = "cut" && List.length !clicked_points >= 2
       then (
@@ -614,11 +680,13 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           let p2 = List.nth pts 1 in
           let cut_data = cut_square !img_data p1 p2 in
           prev_cut := array_sub !img_data cut_data;
+          push_undo ();
           img_data := cut_data;
           add_message "Applying square cut.\n")
         else begin
           let cut_data = cut !img_data (List.rev !clicked_points) in
           prev_cut := array_sub !img_data cut_data;
+          push_undo ();
           img_data := cut_data;
           add_message "Cut applied with points:\n";
           List.iter
@@ -644,6 +712,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           let p2 = List.nth pts 1 in
           let fill_data = fill_square !img_data p1 p2 !fill_color in
           prev_cut := array_sub !img_data fill_data;
+          push_undo ();
           img_data := fill_data;
           add_message "Applying square fill.\n")
         else begin
@@ -651,6 +720,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             fill !img_data (List.rev !clicked_points) !fill_color
           in
           prev_cut := array_sub !img_data fill_data;
+          push_undo ();
           img_data := fill_data;
           add_message "Fill applied with points:\n";
           List.iter
@@ -673,6 +743,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
       then (
         let paste_point = List.hd !clicked_points in
         let pasted_data = paste !img_data !prev_cut paste_point in
+        push_undo ();
         img_data := pasted_data;
         add_message
           (Printf.sprintf "Paste applied at point: (%d, %d)" (fst paste_point)
@@ -758,5 +829,6 @@ let () =
   draw_toolbar win_w win_h toolbar_x "";
   synchronize ();
   add_message "Welcome to CamlShop!";
+  add_message "Keyboard: u = undo, y = redo, q = quit.";
 
   handle_buttons img_x img_y w h data toolbar_x
