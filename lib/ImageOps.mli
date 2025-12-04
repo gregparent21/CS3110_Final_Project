@@ -81,3 +81,7 @@ val pixelate : int array array -> int -> int array array
 val rotate_90 : int array array -> int array array
 (** [rotate_90 img] returns a new image that is the original rotated 90 degrees
     clockwise. *)
+
+val adjust_brightness : int array array -> int -> int array array
+(** [adjust_brightness data delta] adds [delta] to each color channel of every
+    pixel (R,G,B), clamping to [0..255]. *)

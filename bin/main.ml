@@ -11,6 +11,7 @@ let message_panel_h = 100
 (* Message buffer: keep most recent lines at bottom panel *)
 let messages : string list ref = ref []
 let pixel_fact = ref 2
+let brightness_level = ref 0
 
 (* Record type to capture everything that changes when we edit *)
 type editor_state = {
@@ -254,7 +255,38 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
   let button_reset_y = win_h - 600 in
   draw_button toolbar_x button_reset_y button_w button_h "Reset"
     (current_tool = "reset");
-  moveto (toolbar_x + 5) (button_reset_y + button_h + 5)
+  moveto (toolbar_x + 5) (button_reset_y + button_h + 5);
+
+  (* Brightness slider on right *)
+  let slider_width = 20 in
+  let slider_margin = 10 in
+  let slider_x = win_w - slider_width - slider_margin in
+  let slider_y = message_panel_h + 40 in
+  let slider_h = win_h - message_panel_h - 80 in
+
+  set_color (rgb 230 230 230);
+  fill_rect slider_x slider_y slider_width slider_h;
+  set_color black;
+  draw_rect slider_x slider_y slider_width slider_h;
+
+  let zero_y = slider_y + (slider_h / 2) in
+  moveto (slider_x - 5) zero_y;
+  lineto (slider_x + slider_width + 5) zero_y;
+
+  let max_level = 100 in
+  let level =
+    if !brightness_level < -max_level then -max_level
+    else if !brightness_level > max_level then max_level
+    else !brightness_level
+  in
+  let t = float_of_int (level + max_level) /. float_of_int (2 * max_level) in
+  let knob_y = slider_y + int_of_float (t *. float_of_int slider_h) in
+
+  set_color (rgb 255 165 0);
+  fill_circle (slider_x + (slider_width / 2)) knob_y 5;
+  set_color black;
+  moveto (slider_x - 5) (slider_y + slider_h + 5);
+  draw_string "Bright"
 
 (** [redraw img img_x img_y w h toolbar_x current_tool] is a helper function
     that redraws the image after applying the cut. *)
@@ -307,6 +339,11 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
   let pixelate_y = size_y () - 480 in
   let save_y = size_y () - 540 in
   let reset_y = size_y () - 600 in
+  let slider_width = 20 in
+  let slider_margin = 10 in
+  let slider_x = size_x () - slider_width - slider_margin in
+  let slider_y = message_panel_h + 40 in
+  let slider_h = size_y () - message_panel_h - 80 in
 
   let prev_cut = ref (Array.make_matrix 0 0 0) in
   (* Track current image position and size, starting from initial *)
@@ -354,6 +391,46 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           event_loop current_tool)
         else if screen_x >= toolbar_x then
           if
+            screen_x >= slider_x
+            && screen_x <= slider_x + slider_width
+            && screen_y >= slider_y
+            && screen_y <= slider_y + slider_h
+          then
+            let max_level = 100 in
+            let rel =
+              float_of_int (screen_y - slider_y) /. float_of_int slider_h
+            in
+            let level =
+              int_of_float (rel *. float_of_int (2 * max_level)) - max_level
+            in
+            let step = 20 in
+            let snapped = step * (level / step) in
+            let snapped =
+              if snapped < -max_level then -max_level
+              else if snapped > max_level then max_level
+              else snapped
+            in
+            let delta = snapped - !brightness_level in
+            if delta <> 0 then (
+              push_undo ();
+              brightness_level := snapped;
+              img_data := adjust_brightness !img_data delta;
+              let win_w = size_x () in
+              let win_h = size_y () in
+              let new_img = Graphics.make_image !img_data in
+              clear_graph ();
+              draw_image new_img !img_x_ref !img_y_ref;
+              draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+              draw_toolbar win_w win_h toolbar_x current_tool;
+              draw_message_panel win_w message_panel_h;
+              add_message (Printf.sprintf "Brightness: %d" !brightness_level);
+              synchronize ();
+              Unix.sleepf 0.05;
+              event_loop current_tool)
+            else (
+              Unix.sleepf 0.05;
+              event_loop current_tool)
+          else if
             is_point_in_rect screen_x screen_y toolbar_x cut_y button_width
               button_height
           then (

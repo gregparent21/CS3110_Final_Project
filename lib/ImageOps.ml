@@ -379,3 +379,17 @@ let rotate_90 (data : int array array) : int array array =
   else
     let w = Array.length data.(0) in
     Array.init w (fun i -> Array.init h (fun j -> data.(h - 1 - j).(i)))
+
+let clamp_0_255 x = if x < 0 then 0 else if x > 255 then 255 else x
+
+let adjust_brightness (data : int array array) (delta : int) : int array array =
+  Array.map
+    (fun row ->
+      Array.map
+        (fun p ->
+          let nr = clamp_0_255 (r p + delta) in
+          let ng = clamp_0_255 (g p + delta) in
+          let nb = clamp_0_255 (b p + delta) in
+          Graphics.rgb nr ng nb)
+        row)
+    data
