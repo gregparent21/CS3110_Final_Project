@@ -31,10 +31,15 @@ val fill : int array array -> (int * int) list -> int -> int array array
     each two conseuctive pairs of integers (wrapping the last pair to the first)
     with color. *)
 
-val paste : int array array -> int array array -> int * int -> int array array
-(** [paste base overlay (x, y)] pastes the [overlay] image onto the [base] image
-    with the bottom-left corner of the overlay at position [(x, y)] in the base
-    image. *)
+val paste :
+  int array array ->
+  int array array ->
+  int array array ->
+  int * int ->
+  int array array
+(** [paste base data overlay (x, y)] pastes the [overlay] image onto the [base]
+    image with the bottom-left corner of the overlay at position [(x, y)] in the
+    base image using [data]. *)
 
 val shrink : int array array -> int array array
 (**[shrink] "compresses" a given image by reducing its total pixel count and
@@ -69,6 +74,10 @@ val crop : int array array -> int * int -> int * int -> int array array
 
 val array_sub : int array array -> int array array -> int array array
 (** [array_sub A B] returns A-B elementwise. Requires that [A] and [B] are the
+    same size. *)
+
+val array_plus : int array array -> int array array -> int array array
+(** [array_plus A B] returns A+B elementwise. Requires that [A] and [B] are the
     same size. *)
 
 val pixelate : int array array -> int -> int array array

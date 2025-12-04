@@ -132,22 +132,30 @@ let cut (data : int array array) (pairs : (int * int) list) =
   fill data pairs (Graphics.rgb 255 255 255)
 
 let paste (data : int array array) (image : int array array)
-    ((start_x, start_y) : int * int) =
-  let image_height = Array.length image in
-  let image_width = Array.length image.(0) in
-  let data_height = Array.length data in
-  let data_width = Array.length data.(0) in
-  if
-    start_x < 0 || start_y < 0
-    || start_x + image_width > data_width
-    || start_y + image_height > data_height
-  then raise (Failure "Paste operation out of bounds");
-  for i = 0 to image_height - 1 do
-    for j = 0 to image_width - 1 do
-      data.(start_y + i).(start_x + j) <- image.(i).(j)
+    (cut : int array array) ((start_x, start_y) : int * int) =
+  let low_x = ref 0 in
+  let low_y = ref 0 in
+  let high_x = ref (Array.length image.(0) - 1) in
+  let high_y = ref (Array.length image - 1) in
+  for row = 0 to Array.length image - 1 do
+    for col = 0 to Array.length image.(0) - 1 do
+      if data.(row).(col) <> 0 then begin
+        low_x := min !low_x col;
+        low_y := min !low_y row;
+        high_x := max !high_x col;
+        high_y := max !high_y row
+      end
     done
   done;
-  data
+  try
+    for i = 0 to !high_y - !low_y do
+      for j = 0 to !high_x - !low_x do
+        if data.(i + !low_y).(j + !low_x) < 0 then
+          image.(i + start_y).(j + start_x) <- cut.(i + !low_y).(j + !low_x)
+      done
+    done;
+    image
+  with _ -> image
 
 (**[r] takes a pixel point and returns that pixel's red value (0-255).*)
 let r p = (p lsr 16) land 0xFF
@@ -337,6 +345,13 @@ let array_sub (a : int array array) (b : int array array) : int array array =
       (fun j row -> Array.mapi (fun i pixel -> pixel - b.(j).(i)) row)
       a
   with _ -> raise (Failure "Array Subtraction Error!")
+
+let array_plus (a : int array array) (b : int array array) : int array array =
+  try
+    Array.mapi
+      (fun j row -> Array.mapi (fun i pixel -> pixel + b.(j).(i)) row)
+      a
+  with _ -> raise (Failure "Array Addition Error!")
 
 (**[square_replace] is a helper function for the pixelate function. Takes in the
    reference to the new image created in pixelate and does all the pixelation
