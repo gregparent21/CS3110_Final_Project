@@ -273,7 +273,7 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
   moveto (slider_x - 5) zero_y;
   lineto (slider_x + slider_width + 5) zero_y;
 
-  let max_level = 100 in
+  let max_level = 255 in
   let level =
     if !brightness_level < -max_level then -max_level
     else if !brightness_level > max_level then max_level
@@ -307,6 +307,13 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
   let crop_confirm_mode = ref false in
   let zoom_level = ref 0 in
   let zoom_base = ref (Array.map Array.copy !img_data) in
+
+  let brightness_base = ref (Array.map Array.copy !img_data) in
+
+  let reset_brightness_base () =
+    brightness_base := Array.map Array.copy !img_data;
+    brightness_level := 0
+  in
 
   let rec apply_zoom n data =
     if n = 0 then data
@@ -396,25 +403,25 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             && screen_y >= slider_y
             && screen_y <= slider_y + slider_h
           then
-            let max_level = 100 in
+            let max_level = 255 in
             let rel =
               float_of_int (screen_y - slider_y) /. float_of_int slider_h
             in
+            (* map rel ∈ [0,1] to [-max_level, max_level] *)
             let level =
               int_of_float (rel *. float_of_int (2 * max_level)) - max_level
             in
-            let step = 20 in
-            let snapped = step * (level / step) in
-            let snapped =
-              if snapped < -max_level then -max_level
-              else if snapped > max_level then max_level
-              else snapped
+            (* clamp *)
+            let level =
+              if level < -max_level then -max_level
+              else if level > max_level then max_level
+              else level
             in
-            let delta = snapped - !brightness_level in
-            if delta <> 0 then (
-              push_undo ();
-              brightness_level := snapped;
-              img_data := adjust_brightness !img_data delta;
+
+            if level <> !brightness_level then (
+              brightness_level := level;
+              img_data := adjust_brightness !brightness_base !brightness_level;
+
               let win_w = size_x () in
               let win_h = size_y () in
               let new_img = Graphics.make_image !img_data in
@@ -423,7 +430,6 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
               draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
               draw_toolbar win_w win_h toolbar_x current_tool;
               draw_message_panel win_w message_panel_h;
-              add_message (Printf.sprintf "Brightness: %d" !brightness_level);
               synchronize ();
               Unix.sleepf 0.05;
               event_loop current_tool)
@@ -558,6 +564,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             (* Apply inversion to the current pixel data *)
             push_undo ();
             img_data := invert_colors !img_data;
+            reset_brightness_base ();
             let new_img = Graphics.make_image !img_data in
 
             (* Redraw window with inverted image using current origin/size *)
@@ -579,6 +586,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
               "Grayscale tool selected! Converting image to grayscale.";
             push_undo ();
             img_data := grayscale !img_data;
+            reset_brightness_base ();
             let new_img = Graphics.make_image !img_data in
 
             let win_w = size_x () in
@@ -598,6 +606,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             add_message "Mirror tool selected! Flipping horizontally.";
             push_undo ();
             img_data := flip_horizontal !img_data;
+            reset_brightness_base ();
             let new_img = Graphics.make_image !img_data in
             let win_w = size_x () in
             let win_h = size_y () in
@@ -625,7 +634,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             img_x_ref := (toolbar_x - !w_ref) / 2;
             img_y_ref :=
               message_panel_h + ((win_h - message_panel_h - !h_ref) / 2);
-
+            reset_brightness_base ();
             let new_img = Graphics.make_image !img_data in
             clear_graph ();
             draw_image new_img !img_x_ref !img_y_ref;
@@ -664,7 +673,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             img_x_ref := (toolbar_x - !w_ref) / 2;
             img_y_ref :=
               message_panel_h + ((win_h - message_panel_h - !h_ref) / 2);
-
+            reset_brightness_base ();
             let new_img = Graphics.make_image !img_data in
             clear_graph ();
             draw_image new_img !img_x_ref !img_y_ref;
@@ -704,6 +713,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
 
             let win_w = size_x () in
             let win_h = size_y () in
+            reset_brightness_base ();
             let new_img = Graphics.make_image !img_data in
             clear_graph ();
             draw_image new_img !img_x_ref !img_y_ref;
@@ -804,6 +814,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
               img_x_ref := (toolbar_x - !w_ref) / 2;
               img_y_ref :=
                 message_panel_h + ((win_h - message_panel_h - !h_ref) / 2);
+              reset_brightness_base ();
 
               let new_img = Graphics.make_image !img_data in
               clear_graph ();
@@ -841,6 +852,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
               undo_stack := rest;
               redo_stack := current_state () :: !redo_stack;
               restore_state st;
+              reset_brightness_base ();
               let new_img = Graphics.make_image !img_data in
               redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x "";
               event_loop current_tool)
@@ -851,6 +863,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
               redo_stack := rest;
               undo_stack := current_state () :: !undo_stack;
               restore_state st;
+              reset_brightness_base ();
               let new_img = Graphics.make_image !img_data in
               redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x "";
               event_loop current_tool)
@@ -879,7 +892,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
               (List.rev !clicked_points);
             flush stdout
           end;
-
+          reset_brightness_base ();
           let new_img = Graphics.make_image !img_data in
           redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x
             current_tool;
@@ -914,7 +927,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
               (List.rev !clicked_points);
             flush stdout
           end;
-
+          reset_brightness_base ();
           let new_img = Graphics.make_image !img_data in
           redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x
             current_tool;
@@ -934,7 +947,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           add_message
             (Printf.sprintf "Paste applied at point: (%d, %d)" (fst paste_point)
                (snd paste_point));
-
+          reset_brightness_base ();
           let new_img = Graphics.make_image pasted_data in
           redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x
             current_tool;
@@ -973,7 +986,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             img_x_ref := (toolbar_x - !w_ref) / 2;
             img_y_ref :=
               message_panel_h + ((win_h - message_panel_h - !h_ref) / 2);
-
+            reset_brightness_base ();
             let new_img = Graphics.make_image !img_data in
             clear_graph ();
             draw_image new_img !img_x_ref !img_y_ref;
@@ -1002,7 +1015,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             img_x_ref := (toolbar_x - !w_ref) / 2;
             img_y_ref :=
               message_panel_h + ((win_h - message_panel_h - !h_ref) / 2);
-
+            reset_brightness_base ();
             let new_img = Graphics.make_image !img_data in
             clear_graph ();
             draw_image new_img !img_x_ref !img_y_ref;
@@ -1025,6 +1038,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
 
           let win_w = size_x () in
           let win_h = size_y () in
+          reset_brightness_base ();
           let new_img = Graphics.make_image !img_data in
           clear_graph ();
           draw_image new_img !img_x_ref !img_y_ref;
