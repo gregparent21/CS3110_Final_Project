@@ -204,8 +204,6 @@ let redraw img img_x img_y w h toolbar_x current_tool =
 
 (**[handle_buttons] allows the user to interact with buttons and alter an image
    accordingly.*)
-(**[handle_buttons] allows the user to interact with buttons and alter an image
-   accordingly.*)
    let handle_buttons img_x img_y w h img_data toolbar_x =
     let clicked_points = ref [] in
     let fill_color = ref (Graphics.rgb 0 0 0) in
@@ -249,6 +247,34 @@ let redraw img img_x img_y w h toolbar_x current_tool =
     let img_y_ref = ref img_y in
     let w_ref = ref w in
     let h_ref = ref h in
+  
+    (* Restore functionality*)
+    let undo_stack : editor_state list ref = ref [] in
+    let redo_stack : editor_state list ref = ref [] in
+  
+    let current_state () =
+      {
+        pixels = Array.map Array.copy !img_data;
+        img_x = !img_x_ref;
+        img_y = !img_y_ref;
+        w = !w_ref;
+        h = !h_ref;
+      }
+    in
+  
+    let restore_state st =
+      img_data := Array.map Array.copy st.pixels;
+      img_x_ref := st.img_x;
+      img_y_ref := st.img_y;
+      w_ref := st.w;
+      h_ref := st.h
+    in
+  
+    let push_undo () =
+      undo_stack := current_state () :: !undo_stack;
+      redo_stack := []
+      (* clear redo on new action *)
+    in
   
     let rec event_loop current_tool =
       let screen_x, screen_y = mouse_pos () in
@@ -311,7 +337,6 @@ let redraw img img_x img_y w h toolbar_x current_tool =
             is_point_in_rect screen_x screen_y toolbar_x zoom_y (button_width / 2)
               button_height
           then
-            (* zoom out button click *)
             if !zoom_level <= -3 then (
               add_message "Cannot shrink further (zoom limit reached).";
               Unix.sleepf 0.2;
@@ -320,7 +345,7 @@ let redraw img img_x img_y w h toolbar_x current_tool =
               if !zoom_level = 0 then zoom_base := Array.map Array.copy !img_data;
   
               zoom_level := !zoom_level - 1;
-  
+              push_undo ();
               img_data := apply_zoom !zoom_level !zoom_base;
   
               let new_h = Array.length !img_data in
@@ -348,7 +373,6 @@ let redraw img img_x img_y w h toolbar_x current_tool =
               (toolbar_x + (button_width / 2) + 4)
               zoom_y (button_width / 2) button_height
           then
-            (* zoom in button click *)
             if !zoom_level >= 3 then (
               add_message "Cannot enlarge further (zoom limit reached).";
               Unix.sleepf 0.2;
@@ -357,7 +381,7 @@ let redraw img img_x img_y w h toolbar_x current_tool =
               if !zoom_level = 0 then zoom_base := Array.map Array.copy !img_data;
   
               zoom_level := !zoom_level + 1;
-  
+              push_undo ();
               img_data := apply_zoom !zoom_level !zoom_base;
   
               let new_h = Array.length !img_data in
@@ -387,6 +411,7 @@ let redraw img img_x img_y w h toolbar_x current_tool =
             add_message "Invert tool selected! Inverting colors.";
   
             (* Apply inversion to the current pixel data *)
+            push_undo ();
             img_data := invert_colors !img_data;
             let new_img = Graphics.make_image !img_data in
   
@@ -406,7 +431,7 @@ let redraw img img_x img_y w h toolbar_x current_tool =
               button_height
           then (
             add_message "Mirror tool selected! Flipping horizontally.";
-  
+            push_undo ();
             img_data := flip_horizontal !img_data;
             let new_img = Graphics.make_image !img_data in
             let win_w = size_x () in
@@ -432,7 +457,7 @@ let redraw img img_x img_y w h toolbar_x current_tool =
               button_height
           then (
             add_message "Pixelate tool selected! Pixelating image.";
-  
+            push_undo ();
             img_data := pixelate !img_data !pixel_fact;
   
             pixel_fact := !pixel_fact + 1;
@@ -475,6 +500,7 @@ let redraw img img_x img_y w h toolbar_x current_tool =
               button_height
           then (
             (* Restore original pixel data and geometry *)
+            push_undo ();
             img_data := Array.map Array.copy original_data;
             w_ref := original_w;
             h_ref := original_h;
@@ -521,7 +547,7 @@ let redraw img img_x img_y w h toolbar_x current_tool =
           then (
             crop_points := (img_px, img_py) :: !crop_points;
   
-            (* Small red dot at corner *)
+            (* Small red dot at corner*)
             set_color (rgb 255 0 0);
             fill_circle screen_x screen_y 4;
             synchronize ();
@@ -571,10 +597,10 @@ let redraw img img_x img_y w h toolbar_x current_tool =
             event_loop current_tool)
       else if key_pressed () then
         let key = read_key () in
-        (* --- CROP CONFIRM / CANCEL --- *)
         if key = 'c' && current_tool = "crop" && !crop_confirm_mode then (
           match List.rev !crop_points with
           | p1 :: p2 :: _ ->
+              push_undo ();
               img_data := crop !img_data p1 p2;
   
               let new_h = Array.length !img_data in
@@ -620,8 +646,28 @@ let redraw img img_x img_y w h toolbar_x current_tool =
           add_message "Crop cancelled.";
           synchronize ();
           event_loop "crop")
-  
-        (* --- CUT APPLY (tool command) --- *)
+        else if key = 'u' then (
+          match !undo_stack with
+          | [] -> event_loop current_tool
+          | st :: rest ->
+              undo_stack := rest;
+              redo_stack := current_state () :: !redo_stack;
+              restore_state st;
+              let new_img = Graphics.make_image !img_data in
+              redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x "";
+              add_message "Undo.";
+              event_loop current_tool)
+        else if key = 'y' then (
+          match !redo_stack with
+          | [] -> event_loop current_tool
+          | st :: rest ->
+              redo_stack := rest;
+              undo_stack := current_state () :: !undo_stack;
+              restore_state st;
+              let new_img = Graphics.make_image !img_data in
+              redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x "";
+              add_message "Redo.";
+              event_loop current_tool)
         else if
           key = 'c' && current_tool = "cut" && List.length !clicked_points >= 2
         then (
@@ -631,11 +677,13 @@ let redraw img img_x img_y w h toolbar_x current_tool =
             let p2 = List.nth pts 1 in
             let cut_data = cut_square !img_data p1 p2 in
             prev_cut := array_sub !img_data cut_data;
+            push_undo ();
             img_data := cut_data;
             add_message "Applying square cut.\n")
           else begin
             let cut_data = cut !img_data (List.rev !clicked_points) in
             prev_cut := array_sub !img_data cut_data;
+            push_undo ();
             img_data := cut_data;
             add_message "Cut applied with points:\n";
             List.iter
@@ -652,8 +700,6 @@ let redraw img img_x img_y w h toolbar_x current_tool =
           clicked_points := [];
           add_message "Points reset. Select a tool and continue.";
           event_loop "")
-  
-        (* --- FILL APPLY (tool command) --- *)
         else if
           key = 'f' && current_tool = "fill" && List.length !clicked_points >= 2
         then (
@@ -663,6 +709,7 @@ let redraw img img_x img_y w h toolbar_x current_tool =
             let p2 = List.nth pts 1 in
             let fill_data = fill_square !img_data p1 p2 !fill_color in
             prev_cut := array_sub !img_data fill_data;
+            push_undo ();
             img_data := fill_data;
             add_message "Applying square fill.\n")
           else begin
@@ -670,6 +717,7 @@ let redraw img img_x img_y w h toolbar_x current_tool =
               fill !img_data (List.rev !clicked_points) !fill_color
             in
             prev_cut := array_sub !img_data fill_data;
+            push_undo ();
             img_data := fill_data;
             add_message "Fill applied with points:\n";
             List.iter
@@ -687,13 +735,12 @@ let redraw img img_x img_y w h toolbar_x current_tool =
           clicked_points := [];
           add_message "Points reset. Select a tool and continue.";
           event_loop "")
-  
-        (* --- PASTE APPLY (tool command) --- *)
         else if
           key = 'p' && current_tool = "paste" && List.length !clicked_points = 1
         then (
           let paste_point = List.hd !clicked_points in
           let pasted_data = paste !img_data !prev_cut paste_point in
+          push_undo ();
           img_data := pasted_data;
           add_message
             (Printf.sprintf "Paste applied at point: (%d, %d)" (fst paste_point)
@@ -707,7 +754,7 @@ let redraw img img_x img_y w h toolbar_x current_tool =
           add_message "Points reset. Select a tool and continue.";
           event_loop "")
   
-        (* --- POINT RESET (tool command) --- *)
+        (* point reset (tool command) *)
         else if key = 'r' then (
           clicked_points := [];
           add_message "Points reset.";
@@ -733,6 +780,7 @@ let redraw img img_x img_y w h toolbar_x current_tool =
             if !zoom_level = 0 then zoom_base := Array.map Array.copy !img_data;
   
             zoom_level := !zoom_level + 1;
+            push_undo ();
             img_data := apply_zoom !zoom_level !zoom_base;
   
             let new_h = Array.length !img_data in
@@ -764,6 +812,7 @@ let redraw img img_x img_y w h toolbar_x current_tool =
             if !zoom_level = 0 then zoom_base := Array.map Array.copy !img_data;
   
             zoom_level := !zoom_level - 1;
+            push_undo ();
             img_data := apply_zoom !zoom_level !zoom_base;
   
             let new_h = Array.length !img_data in
@@ -788,6 +837,7 @@ let redraw img img_x img_y w h toolbar_x current_tool =
   
         (* Full reset: 'R' *)
         else if key = 'R' then (
+          push_undo ();
           img_data := Array.map Array.copy original_data;
           w_ref := original_w;
           h_ref := original_h;
@@ -809,18 +859,16 @@ let redraw img img_x img_y w h toolbar_x current_tool =
           synchronize ();
           event_loop "reset")
   
-        (* Quit: 'q' *)
         else if key = 'q' then (
           add_message "Exiting.";
           exit 0)
-  
-        (* Anything else: ignore and keep going *)
         else event_loop current_tool
       else (
         Unix.sleepf 0.01;
         event_loop current_tool)
     in
     event_loop ""
+  
   
 
 (** [handle_click img_x img_y w h] waits for mouse clicks and prints the
@@ -882,6 +930,6 @@ let () =
   draw_toolbar win_w win_h toolbar_x "";
   synchronize ();
   add_message "Welcome to CamlShop!";
-  add_message "Keyboard: u = undo, y = redo, q = quit.";
+  add_message "Keyboard: u = undo, y = redo, q = quit, +/- = zoom, s = save, R = reset.";
 
   handle_buttons img_x img_y w h data toolbar_x
