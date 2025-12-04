@@ -219,11 +219,18 @@ let draw_toolbar win_w win_h toolbar_x current_tool =
     (current_tool = "grayscale");
   moveto (gray_x + 5) (button_invert_y + button_h + 5);
 
-  (* Draw Mirror *)
+  (* Draw Mirror + Rotate next to each other *)
   let button_mirror_y = win_h - 360 in
+  let spacing = 10 in
+  let rotate_x = toolbar_x + button_w + spacing in
+
   draw_button toolbar_x button_mirror_y button_w button_h "Mirror"
     (current_tool = "mirror");
   moveto (toolbar_x + 5) (button_mirror_y + button_h + 5);
+
+  draw_button rotate_x button_mirror_y button_w button_h "Rotate"
+    (current_tool = "rotate");
+  moveto (rotate_x + 5) (button_mirror_y + button_h + 5);
 
   (* Draw Crop *)
   let button_crop_y = win_h - 420 in
@@ -284,7 +291,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
 
   (*These lengths defined below are from [draw_toolbar]. Must accurately reflect
     any of the pre-defined values.*)
-  let button_width = 90 in
+  let button_width = 120 in
   let button_height = 40 in
   (* Button Y positions must match draw_toolbar layout *)
   let fill_y = size_y () - 60 in
@@ -294,6 +301,8 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
   let invert_y = size_y () - 300 in
   let gray_x = toolbar_x + button_width + 10 in
   let mirror_y = size_y () - 360 in
+  let rotate_x = toolbar_x + button_width + 10 in
+  let rotate_y = mirror_y in
   let crop_y = size_y () - 420 in
   let pixelate_y = size_y () - 480 in
   let save_y = size_y () - 540 in
@@ -509,6 +518,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             is_point_in_rect screen_x screen_y toolbar_x mirror_y button_width
               button_height
           then (
+            add_message "Mirror tool selected! Flipping horizontally.";
             push_undo ();
             img_data := flip_horizontal !img_data;
             let new_img = Graphics.make_image !img_data in
@@ -522,6 +532,32 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             synchronize ();
             Unix.sleepf 0.2;
             event_loop "mirror")
+          else if
+            is_point_in_rect screen_x screen_y rotate_x rotate_y button_width
+              button_height
+          then (
+            push_undo ();
+            img_data := rotate_90 !img_data;
+
+            let new_h = Array.length !img_data in
+            let new_w = if new_h = 0 then 0 else Array.length !img_data.(0) in
+            h_ref := new_h;
+            w_ref := new_w;
+            let win_w = size_x () in
+            let win_h = size_y () in
+            img_x_ref := (toolbar_x - !w_ref) / 2;
+            img_y_ref :=
+              message_panel_h + ((win_h - message_panel_h - !h_ref) / 2);
+
+            let new_img = Graphics.make_image !img_data in
+            clear_graph ();
+            draw_image new_img !img_x_ref !img_y_ref;
+            draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+            draw_toolbar win_w win_h toolbar_x "rotate";
+            draw_message_panel win_w message_panel_h;
+            synchronize ();
+            Unix.sleepf 0.2;
+            event_loop "rotate")
           else if
             is_point_in_rect screen_x screen_y toolbar_x crop_y button_width
               button_height
@@ -615,9 +651,8 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             && is_within_bounds img_px img_py cur_w cur_h
           then (
             clicked_points := (img_px, img_py) :: !clicked_points;
-            add_message
-              (Printf.sprintf "Point added: (%d, %d). Total: %d" img_px img_py
-                 (List.length !clicked_points));
+            (*add_message (Printf.sprintf "Point added: (%d, %d). Total: %d"
+              img_px img_py (List.length !clicked_points));*)
             Unix.sleepf 0.2;
             event_loop current_tool)
           else if
@@ -703,12 +738,10 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
 
               crop_points := [];
               crop_confirm_mode := false;
-              add_message "Crop applied.";
               event_loop ""
           | _ ->
               crop_points := [];
               crop_confirm_mode := false;
-              add_message "Crop cancelled (invalid points).";
               event_loop "crop")
         else if key = 'r' && current_tool = "crop" && !crop_confirm_mode then (
           (* cancel any pending crop *)
@@ -722,7 +755,6 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
           draw_toolbar win_w win_h toolbar_x "crop";
           draw_message_panel win_w message_panel_h;
-          add_message "Crop cancelled.";
           synchronize ();
           event_loop "crop")
         else if key = 'u' then (
@@ -734,7 +766,6 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
               restore_state st;
               let new_img = Graphics.make_image !img_data in
               redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x "";
-              add_message "Undo.";
               event_loop current_tool)
         else if key = 'y' then (
           match !redo_stack with
@@ -745,7 +776,6 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
               restore_state st;
               let new_img = Graphics.make_image !img_data in
               redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x "";
-              add_message "Redo.";
               event_loop current_tool)
         else if
           key = 'c' && current_tool = "cut" && List.length !clicked_points >= 2
@@ -848,9 +878,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           event_loop "save"
           (* Zoom in: '+' *))
         else if key = '=' || key = '+' then
-          if !zoom_level >= 3 then (
-            add_message "Cannot enlarge further (zoom limit reached).";
-            event_loop current_tool)
+          if !zoom_level >= 3 then event_loop current_tool
           else (
             if !zoom_level = 0 then zoom_base := Array.map Array.copy !img_data;
 
@@ -879,9 +907,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             event_loop "zoom_in"
             (* Zoom out: '-' *))
         else if key = '-' then
-          if !zoom_level <= -3 then (
-            add_message "Cannot shrink further (zoom limit reached).";
-            event_loop current_tool)
+          if !zoom_level <= -3 then event_loop current_tool
           else (
             if !zoom_level = 0 then zoom_base := Array.map Array.copy !img_data;
 
