@@ -276,6 +276,63 @@ let tests =
            let result = crop img (2, 1) (2, 1) in
            let expected = [| [| 22 |] |] in
            assert_equal expected result );
+         ( "Test screen_to_image_coords" >:: fun _ ->
+           let ix, iy = screen_to_image_coords 130 70 100 50 in
+           assert_equal (30, 20) (ix, iy) );
+         ( "Test is_within_bounds" >:: fun _ ->
+           let w, h = (3, 2) in
+           assert_bool "0,0 in-bounds" (is_within_bounds 0 0 w h);
+           assert_bool "2,1 in-bounds" (is_within_bounds 2 1 w h);
+           assert_bool "-1,0 out-of-bounds" (not (is_within_bounds (-1) 0 w h));
+           assert_bool "3,0 out-of-bounds" (not (is_within_bounds 3 0 w h));
+           assert_bool "0,2 out-of-bounds" (not (is_within_bounds 0 2 w h)) );
+         ( "Test pixel_to_string" >:: fun _ ->
+           let s = pixel_to_string 10 20 30 in
+           assert_equal "RGB(10, 20, 30)" s );
+         ( "Test replace_color simple" >:: fun _ ->
+           let p1 = Graphics.rgb 10 20 30 in
+           let p2 = Graphics.rgb 40 50 60 in
+           let p3 = Graphics.rgb 70 80 90 in
+           let img = [| [| p1; p2 |]; [| p1; p3 |] |] in
+           let result = replace_color img (10, 20, 30) (0, 0, 0) in
+           let black = Graphics.rgb 0 0 0 in
+           let expected = [| [| black; p2 |]; [| black; p3 |] |] in
+           assert_equal expected result );
+         ( "Test enlarge 1x1 -> 2x2" >:: fun _ ->
+           let p = c 50 in
+           let img = [| [| p |] |] in
+           let result = enlarge img in
+           let expected = [| [| p; p |]; [| p; p |] |] in
+           assert_equal expected result );
+         ( "Test enlarge 2x2 -> 4x4" >:: fun _ ->
+           let a = c 10 in
+           let b = c 20 in
+           let c_ = c 30 in
+           let d = c 40 in
+           let img = [| [| a; b |]; [| c_; d |] |] in
+           let result = enlarge img in
+           let expected =
+             [|
+               [| a; a; b; b |];
+               [| a; a; b; b |];
+               [| c_; c_; d; d |];
+               [| c_; c_; d; d |];
+             |]
+           in
+           assert_equal expected result );
+         ( "Test shrink_then_enlarge_square_greyscale" >:: fun _ ->
+           let img =
+             [|
+               [| c 10; c 10; c 50; c 50 |];
+               [| c 10; c 10; c 50; c 50 |];
+               [| c 80; c 80; c 120; c 120 |];
+               [| c 80; c 80; c 120; c 120 |];
+             |]
+           in
+           let shrunk = shrink img in
+           let enlarged = enlarge shrunk in
+           (* Should give back exactly same image *)
+           assert_equal img enlarged );
        ]
 
 let _ = run_test_tt_main tests
