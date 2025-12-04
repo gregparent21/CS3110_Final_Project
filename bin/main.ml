@@ -23,44 +23,49 @@ type editor_state = {
 
 (* Generic exception logger that prints both to stderr and the message panel. *)
 let log_exception context exn =
-  let exn_str = Printexc.to_string exn in
-  let msg = "Unexpected error in " ^ context ^ ": " ^ exn_str in
-  prerr_endline msg;
-  try
-    (* Try to log into the message panel. *)
-    messages := msg :: !messages;
-    let max_lines = 6 in
-    if List.length !messages > max_lines then (
-      let rec take n l =
-        if n <= 0 then []
-        else
-          match l with
-          | [] -> []
-          | x :: xs -> x :: take (n - 1) xs
-      in
-      messages := take max_lines !messages;
-      let win_w = try size_x () with _ -> 0 in
-      if win_w > 0 then (
-        let panel_h = message_panel_h in
-        set_color (rgb 245 245 245);
-        fill_rect 0 0 win_w panel_h;
-        set_color black;
-        draw_rect 0 0 win_w panel_h;
-        let line_h = 14 in
-        let margin = 8 in
-        let rec draw_lines ls idx =
-          match ls with
-          | [] -> ()
-          | hd :: tl ->
-              let y = margin + (idx * line_h) in
-              moveto margin y;
-              draw_string hd;
-              draw_lines tl (idx + 1)
-        in
-        let to_draw = List.rev !messages in
-        draw_lines to_draw 0;
-        synchronize ()))
-  with _ -> ()
+  match exn with
+  | Graphics.Graphic_failure msg ->
+      (* Special case: graphics screen is gone; do NOT attempt drawing. *)
+      prerr_endline ("Graphics error in " ^ context ^ ": " ^ msg)
+  | _ ->
+      let exn_str = Printexc.to_string exn in
+      let msg = "Unexpected error in " ^ context ^ ": " ^ exn_str in
+      prerr_endline msg;
+      (try
+         (* Try to log into the message panel. *)
+         messages := msg :: !messages;
+         let max_lines = 6 in
+         if List.length !messages > max_lines then (
+           let rec take n l =
+             if n <= 0 then []
+             else
+               match l with
+               | [] -> []
+               | x :: xs -> x :: take (n - 1) xs
+           in
+           messages := take max_lines !messages;
+           let win_w = try size_x () with _ -> 0 in
+           if win_w > 0 then (
+             let panel_h = message_panel_h in
+             set_color (rgb 245 245 245);
+             fill_rect 0 0 win_w panel_h;
+             set_color black;
+             draw_rect 0 0 win_w panel_h;
+             let line_h = 14 in
+             let margin = 8 in
+             let rec draw_lines ls idx =
+               match ls with
+               | [] -> ()
+               | hd :: tl ->
+                   let y = margin + (idx * line_h) in
+                   moveto margin y;
+                   draw_string hd;
+                   draw_lines tl (idx + 1)
+             in
+             let to_draw = List.rev !messages in
+             draw_lines to_draw 0;
+             synchronize ()))
+       with _ -> ())
 
 let draw_message_panel win_w _panel_h =
   let panel_h = message_panel_h in
@@ -933,9 +938,14 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
         Unix.sleepf 0.01;
         event_loop current_tool)
     with exn ->
-      log_exception "event_loop" exn;
-      Unix.sleepf 0.2;
-      event_loop current_tool
+      (match exn with
+      | Graphics.Graphic_failure msg ->
+          prerr_endline ("Graphics closed in event_loop: " ^ msg);
+          exit 0
+      | _ ->
+          log_exception "event_loop" exn;
+          Unix.sleepf 0.2;
+          event_loop current_tool)
   in
   event_loop ""
 
@@ -961,9 +971,14 @@ let handle_click img_x img_y w h =
         Unix.sleepf 0.01;
         click_loop ())
     with exn ->
-      log_exception "click_loop" exn;
-      Unix.sleepf 0.2;
-      click_loop ()
+      (match exn with
+      | Graphics.Graphic_failure msg ->
+          prerr_endline ("Graphics closed in click_loop: " ^ msg);
+          exit 0
+      | _ ->
+          log_exception "click_loop" exn;
+          Unix.sleepf 0.2;
+          click_loop ())
   in
   click_loop ()
 
@@ -1016,7 +1031,12 @@ let () =
 
     handle_buttons img_x img_y w h data toolbar_x
   with exn ->
-    prerr_endline ("Fatal error in main: " ^ Printexc.to_string exn);
-    Printexc.print_backtrace stderr;
-    (try add_message "Fatal error occurred. Exiting CamlShop." with _ -> ());
-    exit 1
+    (match exn with
+    | Graphics.Graphic_failure msg ->
+        prerr_endline ("Graphics closed in main: " ^ msg);
+        exit 0
+    | _ ->
+        prerr_endline ("Fatal error in main: " ^ Printexc.to_string exn);
+        Printexc.print_backtrace stderr;
+        (try add_message "Fatal error occurred. Exiting CamlShop." with _ -> ());
+        exit 1)
