@@ -97,8 +97,6 @@ let fill_square (data : int array array) ((start_x, start_y) : int * int)
   with _ -> raise (Failure "invalid coordinates")
 
 let fill (data : int array array) (pairs : (int * int) list) (color : int) =
-  let n = List.length pairs in
-  if n < 3 then raise (Failure "polygon must have at least 3 vertices");
   try
     let segments =
       List.mapi
