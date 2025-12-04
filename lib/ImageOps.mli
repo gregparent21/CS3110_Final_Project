@@ -76,10 +76,6 @@ val array_sub : int array array -> int array array -> int array array
 (** [array_sub A B] returns A-B elementwise. Requires that [A] and [B] are the
     same size. *)
 
-val array_plus : int array array -> int array array -> int array array
-(** [array_plus A B] returns A+B elementwise. Requires that [A] and [B] are the
-    same size. *)
-
 val pixelate : int array array -> int -> int array array
 (**[pixelate] returns a new image that is a pixelated version of the original
    image. It pixelates the image based on a pixelation factor. As an example, a

@@ -412,7 +412,7 @@ let tests =
            let image = [| [| 0; 0 |]; [| 0; 0 |] |] in
            let cut = [| [| 3; 1 |]; [| 1; 5 |] |] in
            let result = paste data image cut (1, 1) in
-           let expected = [| [| 0; 0 |]; [| 0; 5 |] |] in
+           let expected = [| [| 0; 5 |]; [| 0; 0 |] |] in
            print_endline
              (Printf.sprintf "Result: [%d,%d; %d,%d]"
                 result.(0).(0)
@@ -420,6 +420,20 @@ let tests =
                 result.(1).(0)
                 result.(1).(1));
            assert_equal expected result );
+         ( "Test paste vertical error" >:: fun _ ->
+           let data = [| [| 0; 0 |]; [| 0; -1 |] |] in
+           let image = [| [| 0; 0 |]; [| 0; 0 |] |] in
+           let cut = [| [| 3; 1 |]; [| 1; 5 |] |] in
+           assert_raises
+             (Failure "Paste operation goes out of bounds vertically")
+             (fun () -> ignore (paste data image cut (0, 2))) );
+         ( "Test paste horizontal error" >:: fun _ ->
+           let data = [| [| 0; 0 |]; [| 0; -1 |] |] in
+           let image = [| [| 0; 0 |]; [| 0; 0 |] |] in
+           let cut = [| [| 3; 1 |]; [| 1; 5 |] |] in
+           assert_raises
+             (Failure "Paste operation goes out of bounds horizontally")
+             (fun () -> ignore (paste data image cut (2, 0))) );
          ( "Test rotate_90 2x3 -> 3x2" >:: fun _ ->
            let img = [| [| 1; 2; 3 |]; [| 4; 5; 6 |] |] in
            let result = rotate_90 img in

@@ -306,7 +306,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
   let clicked_points = ref [] in
   let fill_color = ref (Graphics.rgb 0 0 0) in
   let crop_points = ref [] in
-  let crop_confirm_mode = ref false in
+  let confirm_mode = ref false in
   let zoom_level = ref 0 in
   let zoom_base = ref (Array.map Array.copy !img_data) in
   let brightness_level = ref 0 in
@@ -357,6 +357,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
   let slider_h = size_y () - message_panel_h - 80 in
 
   let prev_cut = ref (Array.make_matrix 0 0 0) in
+  let prev_img = ref (Array.make_matrix 0 0 0) in
   (* Track current image position and size, starting from initial *)
   let img_x_ref = ref img_x in
   let img_y_ref = ref img_y in
@@ -397,7 +398,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
       let cur_w = !w_ref in
       let cur_h = !h_ref in
       if button_down () then
-        if !crop_confirm_mode then (
+        if !confirm_mode then (
           Unix.sleepf 0.2;
           event_loop current_tool)
         else if screen_x >= toolbar_x then
@@ -739,12 +740,14 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             && is_within_bounds img_px img_py cur_w cur_h
           then (
             clicked_points := (img_px, img_py) :: !clicked_points;
-            (*add_message (Printf.sprintf "Point added: (%d, %d). Total: %d"
-              img_px img_py (List.length !clicked_points));*)
+
+            set_color (rgb 255 0 0);
+            fill_circle screen_x screen_y 4;
+            synchronize ();
             Unix.sleepf 0.2;
             event_loop current_tool)
           else if
-            current_tool = "crop" && (not !crop_confirm_mode)
+            current_tool = "crop" && (not !confirm_mode)
             && is_within_bounds img_px img_py cur_w cur_h
           then (
             crop_points := (img_px, img_py) :: !crop_points;
@@ -755,7 +758,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             synchronize ();
 
             if List.length !crop_points = 2 then (
-              crop_confirm_mode := true;
+              confirm_mode := true;
 
               let p1, p2 =
                 match !crop_points with
@@ -799,7 +802,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             event_loop current_tool)
       else if key_pressed () then
         let key = read_key () in
-        if key = 'c' && current_tool = "crop" && !crop_confirm_mode then (
+        if key = 'c' && current_tool = "crop" && !confirm_mode then (
           match List.rev !crop_points with
           | p1 :: p2 :: _ ->
               push_undo ();
@@ -825,16 +828,16 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
               synchronize ();
 
               crop_points := [];
-              crop_confirm_mode := false;
+              confirm_mode := false;
               event_loop ""
           | _ ->
               crop_points := [];
-              crop_confirm_mode := false;
+              confirm_mode := false;
               event_loop "crop")
-        else if key = 'r' && current_tool = "crop" && !crop_confirm_mode then (
+        else if key = 'r' && current_tool = "crop" && !confirm_mode then (
           (* cancel any pending crop *)
           crop_points := [];
-          crop_confirm_mode := false;
+          confirm_mode := false;
           let win_w = size_x () in
           let win_h = size_y () in
           let img = make_display_image () in
@@ -875,13 +878,13 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             let p1 = List.nth pts 0 in
             let p2 = List.nth pts 1 in
             let cut_data = cut_square !img_data p1 p2 in
+            prev_img := Array.map Array.copy !img_data;
             prev_cut := array_sub !img_data cut_data;
             push_undo ();
             img_data := cut_data;
             add_message "Applying square cut.")
           else begin
             let cut_data = cut !img_data (List.rev !clicked_points) in
-            prev_cut := array_sub !img_data cut_data;
             push_undo ();
             img_data := cut_data;
             List.iter
@@ -907,7 +910,6 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             let p1 = List.nth pts 0 in
             let p2 = List.nth pts 1 in
             let fill_data = fill_square !img_data p1 p2 !fill_color in
-            prev_cut := array_sub !img_data fill_data;
             push_undo ();
             img_data := fill_data;
             add_message "Applying square fill.\n")
@@ -915,7 +917,6 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             let fill_data =
               fill !img_data (List.rev !clicked_points) !fill_color
             in
-            prev_cut := array_sub !img_data fill_data;
             push_undo ();
             img_data := fill_data;
             add_message "Fill applied with points:\n";
@@ -938,24 +939,34 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           key = 'p' && current_tool = "paste" && List.length !clicked_points = 1
         then (
           (* Currenlty assumes pasting only a square. *)
-          let paste_point = List.hd !clicked_points in
-          let pasted_data =
-            paste !prev_cut !img_data
-              (array_plus !prev_cut !img_data)
-              paste_point
-          in
-          push_undo ();
-          img_data := pasted_data;
-          add_message
-            (Printf.sprintf "Paste applied at point: (%d, %d)" (fst paste_point)
-               (snd paste_point));
-          let new_img = make_display_image () in
-          redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x
-            current_tool !brightness_level;
+          try
+            try
+              begin
+                let paste_point = List.hd !clicked_points in
+                let pasted_data =
+                  paste !prev_cut !img_data !prev_img paste_point
+                in
+                push_undo ();
+                img_data := pasted_data;
+                add_message
+                  (Printf.sprintf "Paste applied at point: (%d, %d)"
+                     (fst paste_point) (snd paste_point));
+                let new_img = make_display_image () in
+                redraw new_img !img_x_ref !img_y_ref !w_ref !h_ref toolbar_x
+                  current_tool !brightness_level;
 
-          clicked_points := [];
-          add_message "Points reset. Select a tool and continue.";
-          event_loop "" (* point reset (tool command) *))
+                clicked_points := [];
+                add_message "Points reset. Select a tool and continue.";
+                event_loop "" (* point reset (tool command) *)
+              end
+            with Failure msg ->
+              add_message ("Paste failed: " ^ msg);
+              clicked_points := [];
+              event_loop current_tool
+          with Invalid_argument msg ->
+            add_message "Paste failed: No previous square cut to paste.";
+            clicked_points := [];
+            event_loop current_tool)
         else if key = 'r' then (
           clicked_points := [];
           add_message "Points reset.";

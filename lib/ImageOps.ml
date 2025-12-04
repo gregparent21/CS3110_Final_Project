@@ -133,6 +133,7 @@ let cut (data : int array array) (pairs : (int * int) list) =
 
 let paste (data : int array array) (image : int array array)
     (cut : int array array) ((start_x, start_y) : int * int) =
+  let result = image in
   let low_x = ref (Array.length image.(0) - 1) in
   let low_y = ref (Array.length image - 1) in
   let high_x = ref 0 in
@@ -147,6 +148,10 @@ let paste (data : int array array) (image : int array array)
       end
     done
   done;
+  if Array.length image - !high_y + !low_y - start_y - 1 < 0 then
+    failwith "Paste operation goes out of bounds vertically";
+  if !high_x - !low_x + start_x >= Array.length image.(0) then
+    failwith "Paste operation goes out of bounds horizontally";
   try
     let height = Array.length image in
     for i = 0 to !high_y - !low_y do
@@ -156,7 +161,7 @@ let paste (data : int array array) (image : int array array)
       done
     done;
     image
-  with _ -> image
+  with _ -> result
 
 (**[r] takes a pixel point and returns that pixel's red value (0-255).*)
 let r p = (p lsr 16) land 0xFF
@@ -346,13 +351,6 @@ let array_sub (a : int array array) (b : int array array) : int array array =
       (fun j row -> Array.mapi (fun i pixel -> pixel - b.(j).(i)) row)
       a
   with _ -> raise (Failure "Array Subtraction Error!")
-
-let array_plus (a : int array array) (b : int array array) : int array array =
-  try
-    Array.mapi
-      (fun j row -> Array.mapi (fun i pixel -> pixel + b.(j).(i)) row)
-      a
-  with _ -> raise (Failure "Array Addition Error!")
 
 (**[square_replace] is a helper function for the pixelate function. Takes in the
    reference to the new image created in pixelate and does all the pixelation
