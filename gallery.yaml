@@ -1,6 +1,6 @@
 ---
 # Members of your group.
-group:  
+group:
   - name: Gregory Parent
     netid: gmp89
   - name: Evan Holly
@@ -23,11 +23,10 @@ title: "CamlShop"
 # OK if this is a Cornell Github link, but public gallery viewers won't be able to see it.
 git-repo: "https://github.com/gregparent21/CS3110_Final_Project"
 # Replace the URL with your own demo video.
-demo-video-url: "https://youtu.be/9JfDWLyX338"
+demo-video-url: ""
 # Write a short, attention-grabbing description of your project.
 desc: >
-  Our project is an OCaml version of photoshop. We implement basic functionalities 
-  from photoshop such as cutting, changing colors, or resizing images. We aim to be 
-  able to import images, change them using these photoshop tools and save it once 
-  done. Additionally, we aim to improve the UI so the user does not have to refer to 
-  the terminal. 
+  Our project is an OCaml version of photoshop. We implement image editing functionalities 
+  from photoshop such as cutting, pasting, color manipulation, image resizing/blurring and 
+  file saving. All functionality is handled in the UI popup and allows for the user to load 
+  any png files.
