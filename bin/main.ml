@@ -522,11 +522,10 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
               button_height
           then (
             add_message
-              "Fill tool selected! Click two opposite corners to fill a square \
-               or three or more points to fill a polygon.";
-            add_message
-              "Press 'f' to apply or 'r' to reset. Type fill color as 'R G B' \
-               in the panel, ENTER to confirm, ESC to cancel.";
+              "Click two opposite corners to fill a square \
+               or three or more points to fill a polygon. Press 'f' to apply or 'r' to reset.";
+            add_message "Fill tool selected! Type fill color as 'R G B' \
+               in the panel, ENTER to confirm, ESC to cancel. ";
             let input = prompt_fillcolor_ui () in
             let rgb_vals =
               if input = "" then (
@@ -556,7 +555,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             add_message "Press 'p' to apply the paste and 'r' to reset.";
             add_message
               "Paste tool selected! Select the bottom left endpoint where you \
-               would like to paste the previous cut.";
+              would like to paste the previous SQUARE cut.";
             Unix.sleepf 0.2;
             event_loop "paste")
           else if
@@ -989,14 +988,14 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             let fill_data = fill_square !img_data p1 p2 !fill_color in
             push_undo ();
             img_data := fill_data;
-            add_message "Applying square fill.\n")
+            add_message "Applying square fill.")
           else begin
             let fill_data =
               fill !img_data (List.rev !clicked_points) !fill_color
             in
             push_undo ();
             img_data := fill_data;
-            add_message "Fill applied with points:\n";
+            add_message "Fill applied with points:";
             List.iter
               (fun (x, y) ->
                 add_message
