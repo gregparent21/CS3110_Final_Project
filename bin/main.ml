@@ -110,9 +110,9 @@ let add_message s =
     synchronize ()
   with _ -> ()
 
-(** Prompt for a filename using keyboard input in the UI (message panel),
-    not stdin. Returns "" if the user cancels or the graphics window closes. *)
-let prompt_filename_ui () : string =
+(** Generic UI line input: draws [label] in the message panel and lets the
+    user type; ENTER confirms, ESC cancels (returns ""). *)
+let prompt_line_ui (label : string) : string =
   let buf = Buffer.create 32 in
   let finished = ref false in
   while not !finished do
@@ -120,7 +120,7 @@ let prompt_filename_ui () : string =
       let win_w =
         try size_x () with
         | Graphics.Graphic_failure msg ->
-            prerr_endline ("Graphics closed in prompt_filename_ui: " ^ msg);
+            prerr_endline ("Graphics closed in prompt_line_ui: " ^ msg);
             finished := true;
             0
       in
@@ -130,7 +130,7 @@ let prompt_filename_ui () : string =
         set_color black;
         moveto 10 (message_panel_h - 20);
         let current = Buffer.contents buf in
-        draw_string ("Filename (no extension): " ^ current);
+        draw_string (label ^ current);
         synchronize ();
         (* Wait for a key *)
         while not (key_pressed ()) do
@@ -139,7 +139,8 @@ let prompt_filename_ui () : string =
         let ch = read_key () in
         match ch with
         | '\r' | '\n' ->
-            if Buffer.length buf > 0 then finished := true
+            (* accept whatever is there, possibly empty *)
+            finished := true
         | '\008' | '\127' ->
             (* backspace *)
             let len = Buffer.length buf in
@@ -149,11 +150,12 @@ let prompt_filename_ui () : string =
             Buffer.reset buf;
             finished := true
         | c ->
+            (* allow letters, digits, underscore, dash, dot, and spaces *)
             if
               (c >= 'a' && c <= 'z')
               || (c >= 'A' && c <= 'Z')
               || (c >= '0' && c <= '9')
-              || c = '_' || c = '-' || c = '.'
+              || c = '_' || c = '-' || c = '.' || c = ' '
             then
               Buffer.add_char buf c
             else
@@ -161,13 +163,21 @@ let prompt_filename_ui () : string =
       )
     with
     | Graphics.Graphic_failure msg ->
-        prerr_endline ("Graphics closed in prompt_filename_ui: " ^ msg);
+        prerr_endline ("Graphics closed in prompt_line_ui: " ^ msg);
         finished := true
     | exn ->
-        log_exception "prompt_filename_ui" exn;
+        log_exception "prompt_line_ui" exn;
         finished := true
   done;
   Buffer.contents buf
+
+(** Prompt specifically for a filename (no extension). *)
+let prompt_filename_ui () : string =
+  prompt_line_ui "Filename (no extension): "
+
+(** Prompt specifically for RGB fill color as "R G B". *)
+let prompt_fillcolor_ui () : string =
+  prompt_line_ui "Fill color (R G B): "
 
 (** [usage ()] outputs the intended command line command format to run the
     program as intended *)
@@ -515,19 +525,24 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
               button_height
           then (
             add_message
-              "Press 'f' to apply or 'r' to reset. Enter fill color (R G B) in \
-               terminal:";
-            add_message
               "Fill tool selected! Click two opposite corners to fill a square \
                or three or more points to fill a polygon.";
             add_message
-              "Please enter three integers between 0 and 255 in the terminal.";
-            let input = read_line () in
+              "Press 'f' to apply or 'r' to reset. Type fill color as 'R G B' \
+               in the panel, ENTER to confirm, ESC to cancel.";
+            let input = prompt_fillcolor_ui () in
             let rgb_vals =
-              try List.map int_of_string (String.split_on_char ' ' input)
-              with Failure _ ->
-                add_message "Invalid input. Using default color (0, 0, 0).";
+              if input = "" then (
+                add_message "Fill cancelled (no color entered).";
                 [ 0; 0; 0 ]
+              ) else
+                try
+                  String.split_on_char ' ' input
+                  |> List.filter (fun s -> s <> "")
+                  |> List.map int_of_string
+                with Failure _ ->
+                  add_message "Invalid input. Using default color (0, 0, 0).";
+                  [ 0; 0; 0 ]
             in
             fill_color :=
               Graphics.rgb
