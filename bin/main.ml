@@ -522,10 +522,11 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
               button_height
           then (
             add_message
-              "Click two opposite corners to fill a square \
-               or three or more points to fill a polygon. Press 'f' to apply or 'r' to reset.";
-            add_message "Fill tool selected! Type fill color as 'R G B' \
-               in the panel, ENTER to confirm, ESC to cancel. ";
+              "Click two opposite corners to fill a square or three or more \
+               points to fill a polygon. Press 'f' to apply or 'r' to reset.";
+            add_message
+              "Fill tool selected! Type fill color as 'R G B' in the panel, \
+               ENTER to confirm, ESC to cancel. ";
             let input = prompt_fillcolor_ui () in
             let rgb_vals =
               if input = "" then (
@@ -555,7 +556,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             add_message "Press 'p' to apply the paste and 'r' to reset.";
             add_message
               "Paste tool selected! Select the bottom left endpoint where you \
-              would like to paste the previous SQUARE cut.";
+               would like to paste the previous SQUARE cut.";
             Unix.sleepf 0.2;
             event_loop "paste")
           else if
@@ -1044,9 +1045,18 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             clicked_points := [];
             event_loop current_tool)
         else if key = 'r' then (
+          let win_w = size_x () in
+          let win_h = size_y () in
+          let img = make_display_image () in
+          clear_graph ();
+          draw_image img !img_x_ref !img_y_ref;
+          draw_axes !img_x_ref !img_y_ref !w_ref !h_ref;
+          draw_toolbar win_w win_h toolbar_x current_tool !brightness_level;
+          draw_message_panel win_w message_panel_h;
+          synchronize ();
           clicked_points := [];
           add_message "Points reset.";
-          event_loop current_tool (* Save: 's' *))
+          event_loop current_tool)
         else if key = 's' then (
           add_message
             "Save (keyboard): Type filename in panel, ENTER to confirm, ESC to \
