@@ -1,5 +1,4 @@
 open Graphics
-
 (** Load an image file and convert it into a [Graphics.image] with its width and
     height. Supports multiple on-disk formats (RGB24, RGBA32, Index8/16, CMYK)
     by normalizing to Rgb24 then creating a Graphics.image. *)
@@ -74,10 +73,12 @@ let graphics_image_of_file (path : string) : Graphics.image * int * int =
 (* Inline tests for CMYK -> RGB conversion *)
 let%test "cmyk_to_rgb_white" =
   (let px = { Color.c = 0; m = 0; y = 0; k = 0 } in
-  let rgb = cmyk_pixel_to_rgb px in 
-  rgb.Color.r = 255 && rgb.Color.g = 255 && rgb.Color.b = 255 ) [@coverage off]
+   let rgb = cmyk_pixel_to_rgb px in
+   rgb.Color.r = 255 && rgb.Color.g = 255 && rgb.Color.b = 255)
+  [@coverage off]
 
 let%test "cmyk_to_rgb_black" =
   (let px = { Color.c = 0; m = 0; y = 0; k = 255 } in
-  let rgb = cmyk_pixel_to_rgb px in 
-  rgb.Color.r = 0 && rgb.Color.g = 0 && rgb.Color.b = 0 ) [@coverage off]
+   let rgb = cmyk_pixel_to_rgb px in
+   rgb.Color.r = 0 && rgb.Color.g = 0 && rgb.Color.b = 0)
+  [@coverage off]

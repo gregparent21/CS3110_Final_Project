@@ -4,6 +4,10 @@ let screen_to_image_coords screen_x screen_y img_x img_y =
 let is_within_bounds x y w h = x >= 0 && x < w && y >= 0 && y < h
 let pixel_to_string r g b = Printf.sprintf "RGB(%d, %d, %d)" r g b
 
+(**[standard_coordinates] returns a pair of points representing the same two
+   coordinates passed into the function, just ordered so that the first
+   coordinate is the top-left corner and the second point is the bottom-left
+   corner.*)
 let standard_coordinates ((a, b) : int * int) ((x, y) : int * int) =
   if a < x && b > y then ((a, y), (x, b))
   else if a > x && b < y then ((x, b), (a, y))
@@ -392,6 +396,9 @@ let rotate_90 (data : int array array) : int array array =
     let w = Array.length data.(0) in
     Array.init w (fun i -> Array.init h (fun j -> data.(h - 1 - j).(i)))
 
+(**[clamp_0_255] takes an integer x and ensures that it is within the bounds of
+   [0,255]. If outside the bound, return the closest value in the bound to the
+   variable x.*)
 let clamp_0_255 x = if x < 0 then 0 else if x > 255 then 255 else x
 
 let adjust_brightness (data : int array array) (delta : int) : int array array =

@@ -1,4 +1,4 @@
-(** Convert pixel array (RGB24) to Camlimages image *)
+(** [pixel_array_to_image] converts pixel array (RGB24) to Camlimages image *)
 let pixel_array_to_image (data : int array array) : Rgb24.t =
   let h = Array.length data in
   if h = 0 then failwith "Empty pixel array";
@@ -15,7 +15,6 @@ let pixel_array_to_image (data : int array array) : Rgb24.t =
   done;
   img
 
-(** Save pixel data to PNG file *)
 let save_image_to_png (data : int array array) (output_path : string) : unit =
   try
     let img = pixel_array_to_image data in
@@ -30,19 +29,22 @@ let save_image_to_png (data : int array array) (output_path : string) : unit =
 
 let%test "pixel_array_to_image_single_pixel" =
   (let data = [| [| 0x112233 |] |] in
-  let img = pixel_array_to_image data in
-  let px = Rgb24.get img 0 0 in
-  px.Color.r = 0x11 && px.Color.g = 0x22 && px.Color.b = 0x33) [@coverage off]
+   let img = pixel_array_to_image data in
+   let px = Rgb24.get img 0 0 in
+   px.Color.r = 0x11 && px.Color.g = 0x22 && px.Color.b = 0x33)
+  [@coverage off]
 
 let%test "pixel_array_to_image_dimensions" =
-  (let data = [| [| 0x000000; 0xFFFFFF |]; [| 0x123456; 0xABCDEF |] |] in 
-  let img = pixel_array_to_image data in
-  img.Rgb24.width = 2 && img.Rgb24.height = (2) ) [@coverage off]
+  (let data = [| [| 0x000000; 0xFFFFFF |]; [| 0x123456; 0xABCDEF |] |] in
+   let img = pixel_array_to_image data in
+   img.Rgb24.width = 2 && img.Rgb24.height = 2)
+  [@coverage off]
 
 let%test "pixel_array_to_image_empty_raises" =
   (try
-    let _ = pixel_array_to_image [||] in
-    false 
-  with
-  | Failure _ -> true 
-  | _ -> false )[@coverage off]
+     let _ = pixel_array_to_image [||] in
+     false
+   with
+  | Failure _ -> true
+  | _ -> false)
+  [@coverage off]
