@@ -67,6 +67,7 @@ let log_exception context exn =
             synchronize ()))
       with _ -> ())
 
+(*draws the messages in the text panel at the bottom of the user interface*)
 let draw_message_panel win_w _panel_h =
   let panel_h = message_panel_h in
   set_color (rgb 245 245 245);
@@ -110,19 +111,19 @@ let add_message s =
     synchronize ()
   with _ -> ()
 
-(** Generic UI line input: draws [label] in the message panel and lets the
-    user type; ENTER confirms, ESC cancels (returns ""). *)
+(** Generic UI line input: draws [label] in the message panel and lets the user
+    type; ENTER confirms, ESC cancels (returns ""). *)
 let prompt_line_ui (label : string) : string =
   let buf = Buffer.create 32 in
   let finished = ref false in
   while not !finished do
     try
       let win_w =
-        try size_x () with
-        | Graphics.Graphic_failure msg ->
-            prerr_endline ("Graphics closed in prompt_line_ui: " ^ msg);
-            finished := true;
-            0
+        try size_x ()
+        with Graphics.Graphic_failure msg ->
+          prerr_endline ("Graphics closed in prompt_line_ui: " ^ msg);
+          finished := true;
+          0
       in
       if (not !finished) && win_w > 0 then (
         (* Redraw panel and show the current text buffer *)
@@ -156,11 +157,8 @@ let prompt_line_ui (label : string) : string =
               || (c >= 'A' && c <= 'Z')
               || (c >= '0' && c <= '9')
               || c = '_' || c = '-' || c = '.' || c = ' '
-            then
-              Buffer.add_char buf c
-            else
-              ()
-      )
+            then Buffer.add_char buf c
+            else ())
     with
     | Graphics.Graphic_failure msg ->
         prerr_endline ("Graphics closed in prompt_line_ui: " ^ msg);
@@ -172,12 +170,10 @@ let prompt_line_ui (label : string) : string =
   Buffer.contents buf
 
 (** Prompt specifically for a filename (no extension). *)
-let prompt_filename_ui () : string =
-  prompt_line_ui "Filename (no extension): "
+let prompt_filename_ui () : string = prompt_line_ui "Filename (no extension): "
 
 (** Prompt specifically for RGB fill color as "R G B". *)
-let prompt_fillcolor_ui () : string =
-  prompt_line_ui "Fill color (R G B): "
+let prompt_fillcolor_ui () : string = prompt_line_ui "Fill color (R G B): "
 
 (** [usage ()] outputs the intended command line command format to run the
     program as intended *)
@@ -461,6 +457,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
     (* clear redo on new action *)
   in
 
+  (*tracks the current tool in use and executes the action of that tool*)
   let rec event_loop current_tool =
     try
       let screen_x, screen_y = mouse_pos () in
@@ -534,8 +531,8 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             let rgb_vals =
               if input = "" then (
                 add_message "Fill cancelled (no color entered).";
-                [ 0; 0; 0 ]
-              ) else
+                [ 0; 0; 0 ])
+              else
                 try
                   String.split_on_char ' ' input
                   |> List.filter (fun s -> s <> "")
@@ -764,8 +761,8 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             if filename = "" then (
               add_message "Save cancelled.";
               Unix.sleepf 0.2;
-              event_loop current_tool
-            ) else (
+              event_loop current_tool)
+            else (
               add_message "Saving as PNG...";
 
               let pixels_to_save =
@@ -777,8 +774,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
 
               add_message (Printf.sprintf "Image saved as %s.png" filename);
               Unix.sleepf 0.2;
-              event_loop "save"
-            ))
+              event_loop "save"))
           else if
             is_point_in_rect screen_x screen_y toolbar_x reset_y button_width
               button_height
@@ -1059,8 +1055,8 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
           let filename = prompt_filename_ui () in
           if filename = "" then (
             add_message "Save cancelled.";
-            event_loop current_tool
-          ) else (
+            event_loop current_tool)
+          else (
             add_message "Saving as PNG...";
 
             let pixels_to_save =
@@ -1071,8 +1067,7 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
               (filename ^ ".png");
 
             add_message (Printf.sprintf "Image saved as %s.png" filename);
-            event_loop "save"
-          )
+            event_loop "save")
           (* Zoom in: '+' *))
         else if key = '=' || key = '+' then
           if !zoom_level >= 3 then event_loop current_tool
