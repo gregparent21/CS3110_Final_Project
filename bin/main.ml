@@ -111,11 +111,13 @@ let add_message s =
     synchronize ()
   with _ -> ()
 
-(** Generic UI line input: draws [label] in the message panel and lets the user
-    type; ENTER confirms, ESC cancels (returns ""). *)
+(** Generic UI line input: draws [label] in a strip *above* the message panel
+    and lets the user type; ENTER confirms, ESC cancels (returns "").
+    The input strip is cleared when finished. *)
 let prompt_line_ui (label : string) : string =
   let buf = Buffer.create 32 in
   let finished = ref false in
+  let input_h = 22 in (* height of the input bar above the panel *)
   while not !finished do
     try
       let win_w =
@@ -126,13 +128,22 @@ let prompt_line_ui (label : string) : string =
           0
       in
       if (not !finished) && win_w > 0 then (
-        (* Redraw panel and show the current text buffer *)
+        (* Redraw the existing message panel *)
         draw_message_panel win_w message_panel_h;
+
+        (* Draw a dedicated input bar directly above the panel *)
+        let y0 = message_panel_h in
+        set_color (rgb 245 245 245);
+        fill_rect 0 y0 win_w input_h;
         set_color black;
-        moveto 10 (message_panel_h - 20);
+        draw_rect 0 y0 win_w input_h;
+
+        (* Draw current input text inside that bar *)
+        moveto 8 (y0 + (input_h / 2) - 5);
         let current = Buffer.contents buf in
         draw_string (label ^ current);
         synchronize ();
+
         (* Wait for a key *)
         while not (key_pressed ()) do
           Unix.sleepf 0.01
@@ -167,6 +178,17 @@ let prompt_line_ui (label : string) : string =
         log_exception "prompt_line_ui" exn;
         finished := true
   done;
+  (* Clear the input bar so the text doesn't linger *)
+  (try
+     let win_w = size_x () in
+     let input_h = 22 in
+     let y0 = message_panel_h in
+     set_color (rgb 245 245 245);
+     fill_rect 0 y0 win_w input_h;
+     (* redraw the message panel one more time to keep it consistent *)
+     draw_message_panel win_w message_panel_h;
+     synchronize ()
+   with _ -> ());
   Buffer.contents buf
 
 (** Prompt specifically for a filename (no extension). *)
@@ -472,13 +494,13 @@ let handle_buttons img_x img_y w h img_data toolbar_x =
             screen_x >= slider_x
             && screen_x <= slider_x + slider_width
             && screen_y >= slider_y
-            && screen_y <= slider_y + slider_h
+            && screen_y <= slider_h + slider_y
           then
             let max_level = 255 in
             let rel =
               float_of_int (screen_y - slider_y) /. float_of_int slider_h
             in
-            (* map rel ∈ [0,1] to [-max_level, max_level] *)
+            (* map rel ∈ [0,1] to [-max-level, max-level] *)
             let level =
               int_of_float (rel *. float_of_int (2 * max_level)) - max_level
             in
