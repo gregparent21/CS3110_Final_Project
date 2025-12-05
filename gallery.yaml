@@ -23,7 +23,7 @@ title: "CamlShop"
 # OK if this is a Cornell Github link, but public gallery viewers won't be able to see it.
 git-repo: "https://github.com/gregparent21/CS3110_Final_Project"
 # Replace the URL with your own demo video.
-demo-video-url: ""
+demo-video-url: "https://youtu.be/EQ_Qw3f65I8"
 # Write a short, attention-grabbing description of your project.
 desc: >
   Our project is an OCaml version of photoshop. We implement image editing functionalities 
