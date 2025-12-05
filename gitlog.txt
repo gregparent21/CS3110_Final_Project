@@ -1,0 +1,718 @@
+* ff6631f 2025-12-05 16:23 EST Update README| 
+|  AUTHORS.md | 2 +-
+|  README.md  | 8 +-------
+|  2 files changed, 2 insertions(+), 8 deletions(-)
+
+* 1dc6f4d 2025-12-05 15:44 EST authors update| 
+|  AUTHORS.md | 3 ++-
+|  1 file changed, 2 insertions(+), 1 deletion(-)
+
+* ce47326 2025-12-05 15:28 EST added youyube video link| 
+|  gallery.yaml | 2 +-
+|  1 file changed, 1 insertion(+), 1 deletion(-)
+
+* b360eb2 2025-12-05 14:57 EST fixed user input| 
+|  bin/main.ml | 34 ++++++++++++++++++++++++++++------
+|  1 file changed, 28 insertions(+), 6 deletions(-)
+
+*   14b3fdd 2025-12-05 12:48 EST Merge branch 'main' of https://github.com/gregparent21/CS3110_Final_Project
+|\  
+| * 7c59913 2025-12-05 12:46 EST Update gallery file| | 
+| |  gallery.yaml | 13 ++++++-------
+| |  1 file changed, 6 insertions(+), 7 deletions(-)
+
+* | 2c0b07b 2025-12-05 12:48 EST Fixed bugs in cut
+|/  |   
+|    bin/main.ml | 22 ++++++++++++++++------
+|    1 file changed, 16 insertions(+), 6 deletions(-)
+
+* 60767b7 2025-12-05 12:39 EST Changed panel output| 
+|  bin/main.ml | 15 +++++++--------
+|  1 file changed, 7 insertions(+), 8 deletions(-)
+
+* b7bf70b 2025-12-05 11:27 EST updated all lib documentation| 
+|  lib/FileSaver.ml    | 28 +++++++++++++++-------------
+|  lib/ImageLoader.ml  | 11 ++++++-----
+|  lib/ImageLoader.mli |  2 +-
+|  lib/ImageOps.ml     |  7 +++++++
+|  4 files changed, 29 insertions(+), 19 deletions(-)
+
+* dd214cf 2025-12-05 11:02 EST updated small documentation in main| 
+|  bin/main.ml | 47 +++++++++++++++++++++--------------------------
+|  1 file changed, 21 insertions(+), 26 deletions(-)
+
+* 1ce6d0e 2025-12-04 20:09 EST fixed ui input for fill| 
+|  bin/main.ml | 49 ++++++++++++++++++++++++++++++++-----------------
+|  1 file changed, 32 insertions(+), 17 deletions(-)
+
+* 3b01593 2025-12-04 17:29 EST Added user input into UI| 
+|  bin/main.ml | 131 +++++++++++++++++++++++++++++++++++++++++++++-------------
+|  1 file changed, 102 insertions(+), 29 deletions(-)
+
+* e0495ab 2025-12-04 17:19 EST Fix output lines| 
+|  bin/main.ml | 12 ++++++------
+|  1 file changed, 6 insertions(+), 6 deletions(-)
+
+*   928a2bf 2025-12-04 16:33 EST Merge branch 'main' of https://github.com/gregparent21/CS3110_Final_Project
+|\  
+| * 04d9c50 2025-12-04 16:25 EST updated and added more tests for the pixelate function| | 
+| |  test/test_ImageOps.ml | 101 ++++++++++++++++++++++++++++++++++++++++++++++
+| |  1 file changed, 101 insertions(+)
+
+* | 8736a18 2025-12-04 16:33 EST Finish paste
+|/  |   
+|    bin/main.ml           | 75 +++++++++++++++++++++++++++--------------------
+|    lib/ImageOps.ml       | 14 ++++-----
+|    lib/ImageOps.mli      |  4 ---
+|    test/test_ImageOps.ml | 16 +++++++++-
+|    4 files changed, 64 insertions(+), 45 deletions(-)
+
+* 8eea527 2025-12-04 14:47 EST Finish paste| 
+|  lib/ImageOps.ml       | 13 +++++++------
+|  test/test_ImageOps.ml | 44 ++++++++++++--------------------------------
+|  2 files changed, 19 insertions(+), 38 deletions(-)
+
+* 527bb4d 2025-12-04 14:22 EST Implement Paste| 
+|  bin/main.ml      | 10 +++++++---
+|  lib/ImageOps.ml  | 43 +++++++++++++++++++++++++++++--------------
+|  lib/ImageOps.mli | 17 +++++++++++++----
+|  3 files changed, 49 insertions(+), 21 deletions(-)
+
+*   d38cbec 2025-12-04 09:51 EST Merge branch 'main' of https://github.com/gregparent21/CS3110_Final_Project
+|\  
+| * 42d38e9 2025-12-04 09:35 EST Fix @coverage off for inlines tests and UI fixes| | 
+| |  bin/main.ml                |  4 ++--
+| |  lib/FileSaver.ml           | 16 ++++++++--------
+| |  lib/ImageLoader.ml         | 10 +++++-----
+| |  lib/ImageLoader.mli        |  3 +++
+| |  test/test_Image_Loading.ml | 33 +++++++++++++++++++++++++++++++++
+| |  5 files changed, 51 insertions(+), 15 deletions(-)
+
+* | 7ab8c58 2025-12-04 09:51 EST fixed issue with brightness saving
+|/  |   
+|    .DS_Store   | Bin 0 -> 6148 bytes
+|    bin/main.ml |  19 ++++++++++++++++---
+|    2 files changed, 16 insertions(+), 3 deletions(-)
+
+* 1487e97 2025-12-04 00:27 EST test cases for adjust_brightness| 
+|  test/test_ImageOps.ml | 20 ++++++++++++++++++++
+|  1 file changed, 20 insertions(+)
+
+* 12b37d3 2025-12-04 00:21 EST change brightness label| 
+|  bin/main.ml | 7 +++++--
+|  1 file changed, 5 insertions(+), 2 deletions(-)
+
+* 7f4756a 2025-12-04 00:16 EST fixed brightness slider| 
+|  bin/main.ml | 128 ++++++++++++++++++++++++++--------------------------------
+|  1 file changed, 57 insertions(+), 71 deletions(-)
+
+* 56a0b15 2025-12-03 23:32 EST improved brightnes sidebar| 
+|  bin/main.ml | 56 +++++++++++++++++++++++++++++++++++---------------------
+|  1 file changed, 35 insertions(+), 21 deletions(-)
+
+*   d2a9c97 2025-12-03 22:06 EST Merge branch 'main' of https://github.com/gregparent21/CS3110_Final_Project
+|\  
+| *   5bf342e 2025-12-03 22:04 EST Merge branch 'main' of https://github.com/gregparent21/CS3110_Final_Project
+| |\  
+| * | 75aec75 2025-12-03 22:04 EST Begin Paste| | | 
+| | |  bin/main.ml     | 5 +++--
+| | |  lib/ImageOps.ml | 2 --
+| | |  2 files changed, 3 insertions(+), 4 deletions(-)
+
+* | | dcca010 2025-12-03 22:06 EST added brightness slidebar
+| |/  
+|/|   | |   
+| |    bin/main.ml      | 79 +++++++++++++++++++++++++++++++++++++++++++++++++-
+| |    lib/ImageOps.ml  | 14 +++++++++
+| |    lib/ImageOps.mli |  4 +++
+| |    3 files changed, 96 insertions(+), 1 deletion(-)
+
+* | 17d254f 2025-12-03 21:48 EST fixed issue with button size| | 
+| |  bin/main.ml | 21 +++++----------------
+| |  1 file changed, 5 insertions(+), 16 deletions(-)
+
+* | 2438c18 2025-12-03 21:44 EST Merge branch 'main' of https://github.com/gregparent21/CS3110_Final_Project
+|\| 
+| *   1cdb9db 2025-12-03 21:41 EST Merge branch 'main' of https://github.com/gregparent21/CS3110_Final_Project
+| |\  
+| * | 4f65a66 2025-12-03 16:22 EST Added test cases for array_sub| | | 
+| | |  lib/ImageOps.ml       | 22 ++++++++++++----------
+| | |  test/test_ImageOps.ml | 17 +++++++++++++++++
+| | |  2 files changed, 29 insertions(+), 10 deletions(-)
+
+* | | 2f5388f 2025-12-03 21:44 EST added rotate functionality along with tests
+| |/  
+|/|   | |   
+| |    bin/main.ml           | 39 ++++++++++++++++++++++++++++++++++++++-
+| |    lib/ImageOps.ml       |  7 +++++++
+| |    lib/ImageOps.mli      |  4 ++++
+| |    test/test_ImageOps.ml | 10 ++++++++++
+| |    4 files changed, 59 insertions(+), 1 deletion(-)
+
+* | feecb89 2025-12-03 21:28 EST test cases for paste and array_sub| | 
+| |  lib/ImageOps.ml       | 16 ++++++-------
+| |  test/test_ImageOps.ml | 61 +++++++++++++++++++++++++++++++++++++++++++++++
+| |  2 files changed, 69 insertions(+), 8 deletions(-)
+
+* | 63918f4 2025-12-03 21:19 EST fixed coverage off| | 
+| |  bin/main.ml     | 87 +++++++++++++++++++++++++++--------------------------
+| |  lib/ImageOps.ml |  4 +--
+| |  2 files changed, 46 insertions(+), 45 deletions(-)
+
+* |   1e2c7c2 2025-12-03 21:11 EST Merge branch 'main' of https://github.com/gregparent21/CS3110_Final_Project
+|\ \  
+| * | e5ff0a6 2025-12-03 21:05 EST Fixed error handling loop| | | 
+| | |  bin/main.ml | 116 ++++++++++++++++++++++++++++++++----------------------
+| | |  1 file changed, 68 insertions(+), 48 deletions(-)
+
+* | | fd81430 2025-12-03 21:11 EST grayscle test added
+|/ /  | |   
+| |    test/test_ImageOps.ml | 29 +++++++++++++++++++++++++++++
+| |    1 file changed, 29 insertions(+)
+
+* | cca1f9a 2025-12-03 20:55 EST added grayscale functionality| | 
+| |  bin/main.ml | 35 +++++++++++++++++++++++++++++++----
+| |  1 file changed, 31 insertions(+), 4 deletions(-)
+
+* | 2cd7c9f 2025-12-03 20:37 EST grayscale function| | 
+| |  bin/main.ml      | 124 ++++++++++++++++++++++++---------------------------
+| |  lib/ImageOps.ml  |  14 ++++++
+| |  lib/ImageOps.mli |   4 ++
+| |  3 files changed, 77 insertions(+), 65 deletions(-)
+
+* | bf8d29c 2025-12-03 20:28 EST More robust error handling| | 
+| |  bin/main.ml | 426 ++++++++++++++++++++++++++++++++------------------------
+| |  1 file changed, 246 insertions(+), 180 deletions(-)
+
+* | 74e516b 2025-12-03 20:16 EST added more keyboard functionality| | 
+| |  bin/main.ml | 90 +++++++++++++++++++++++++++++++++++++++++++--------------
+| |  1 file changed, 69 insertions(+), 21 deletions(-)
+
+* | 3e30bce 2025-12-03 20:11 EST Added more keybaord shortcuts| | 
+| |  bin/main.ml | 1041 +++++++++++++++++++++++++++++--------------------------
+| |  1 file changed, 549 insertions(+), 492 deletions(-)
+
+* | 2ad38d1 2025-12-03 20:07 EST changed message that appears| | 
+| |  bin/main.ml | 8 ++------
+| |  1 file changed, 2 insertions(+), 6 deletions(-)
+
+* | 1d9007a 2025-12-03 20:02 EST added undo/redo feature| | 
+| |  bin/main.ml | 80 ++++++++++++++++++++++++++++++++++++++++++++++++++++++---
+| |  1 file changed, 76 insertions(+), 4 deletions(-)
+
+* | 3c8efd4 2025-12-03 19:38 EST added test case for enlarge/shrink, replace color, screen_to_image_coords, is_within_bounds, pixel_to_string| | 
+| |  test/test_ImageOps.ml | 57 +++++++++++++++++++++++++++++++++++++++++++++++
+| |  1 file changed, 57 insertions(+)
+
+* | 4222657 2025-12-03 19:02 EST Update gitignore| | 
+| |  .gitignore         | 1 +
+| |  lib/ImageLoader.ml | 6 +++---
+| |  2 files changed, 4 insertions(+), 3 deletions(-)
+
+* | 098436b 2025-12-03 18:40 EST Add inline tests for cmyk to rgb testing| | 
+| |  .gitignore         |  2 +-
+| |  lib/ImageLoader.ml | 11 +++++++++++
+| |  2 files changed, 12 insertions(+), 1 deletion(-)
+
+* | 06912a4 2025-12-03 18:08 EST Remove redundant files
+|/  |   
+|    .DS_Store                      | Bin 6148 -> 0 bytes
+|    _coverage/coverage.css         | 500 ---------------------------
+|    _coverage/coverage.js          | 164 ---------
+|    _coverage/highlight.pack.js    |   2 -
+|    _coverage/index.html           |  26 --
+|    _coverage/lib/ImageOps.ml.html | 691 -------------------------------------
+|    6 files changed, 1383 deletions(-)
+
+*   62ed5ef 2025-12-03 16:13 EST Merge branch 'main' of https://github.com/gregparent21/CS3110_Final_Project
+|\  
+| * 6135edf 2025-12-03 15:58 EST Add file saving test - Removed JPEG saving - Restructured code around this - Add file saving tests| | 
+| |  bin/main.ml            | 19 +++----------------
+| |  lib/FileSaver.ml       | 19 +------------------
+| |  lib/FileSaver.mli      |  6 +-----
+| |  requirements.txt       |  1 -
+| |  test/test_FileSaver.ml | 38 ++++++++++++++++++++++++++++++++++++++
+| |  test/test_runner.ml    |  1 +
+| |  6 files changed, 44 insertions(+), 40 deletions(-)
+
+| * 9b688c1 2025-12-03 15:38 EST Add test cases for different file types loading| | 
+| |  data/Bugs_Bunny.svg                             |   1 -
+| |  data/cmyk.tif                                   | Bin 443750 -> 0 bytes
+| |  data/hamburger.jpeg                             | Bin 5636 -> 0 bytes
+| |  data/testData/output_index8.png                 | Bin 0 -> 21138 bytes
+| |  data/testData/output_rgb24.png                  | Bin 0 -> 59749 bytes
+| |  data/{rgba32.png => testData/output_rgba32.png} | Bin
+| |  lib/ImageLoader.ml                              |  77 ++++++++++----------
+| |  lib/ImageLoader.mli                             |  12 ++-
+| |  test/dune                                       |   3 +-
+| |  test/test_Image_Loading.ml                      |  22 ++++++
+| |  10 files changed, 74 insertions(+), 41 deletions(-)
+
+* | eb471db 2025-12-03 16:13 EST Implement fill
+|/  |   
+|    bin/main.ml     | 56 ++++++++++++++++++++++++++++++++++++++++++-------
+|    lib/ImageOps.ml | 60 ++++++++++++++++++++++++++++++++---------------------
+|    2 files changed, 84 insertions(+), 32 deletions(-)
+
+* bc89ef8 2025-12-03 13:13 EST added enlargen next to former compress| 
+|  bin/main.ml      | 127 ++++++++++++++++++++++++++++++++++++++---------------
+|  lib/ImageOps.ml  |  19 ++++++++
+|  lib/ImageOps.mli |   4 ++
+|  3 files changed, 115 insertions(+), 35 deletions(-)
+
+* 4e7e706 2025-12-03 12:40 EST improved crop tool, removed unecessary text| 
+|  bin/main.ml | 115 ++++++++++++++++++++++++++++++++++++++++++----------------
+|  1 file changed, 84 insertions(+), 31 deletions(-)
+
+* 4f5b3b0 2025-12-03 10:29 EST Converted terminal text to window popup| 
+|  bin/main.ml | 23 ++++++++++-------------
+|  1 file changed, 10 insertions(+), 13 deletions(-)
+
+* 35e8625 2025-12-03 09:40 EST updated pixelate so that it can be run more frequently. Added 1 instead of squaring the pixelation factor| 
+|  bin/main.ml | 689 +++++++++++++++++++++++++++++-----------------------------
+|  1 file changed, 344 insertions(+), 345 deletions(-)
+
+* a1a1106 2025-12-02 23:08 EST Implement paste| 
+|  lib/ImageOps.ml | 18 ++++++++++++++++++
+|  1 file changed, 18 insertions(+)
+
+* 20d3721 2025-12-02 23:07 EST Fix fill/cut| 
+|  lib/ImageOps.ml | 50 --------------------------------------------------
+|  1 file changed, 50 deletions(-)
+
+* cb69f66 2025-12-02 23:05 EST Fixed fill| 
+|  lib/ImageOps.ml | 20 +-------------------
+|  1 file changed, 1 insertion(+), 19 deletions(-)
+
+*   802b517 2025-12-02 23:00 EST Merge branch 'main' of github.com:gregparent21/CS3110_Final_Project
+|\  
+| *   e660b91 2025-12-02 22:56 EST Merge branch 'main' of github.com:gregparent21/CS3110_Final_Project
+| |\  
+| * | b6fc6b3 2025-12-02 22:56 EST Added reset button| | | 
+| | |  bin/main.ml | 673 ++++++++++++++++++++++++++++--------------------------
+| | |  1 file changed, 352 insertions(+), 321 deletions(-)
+
+* | | 38e08b1 2025-12-02 22:59 EST added stuff I deleted back, whoops
+| |/  
+|/|   | |   
+| |    lib/ImageOps.ml | 77 +++++++++++++++++++++++++++++++++++++++++++++++++++
+| |    1 file changed, 77 insertions(+)
+
+* | dedc2f4 2025-12-02 22:50 EST updated average neighbors to help pixelate function properly
+|/  |   
+|    lib/ImageOps.ml | 175 ++++++++++++++++++++++++----------------------------
+|    1 file changed, 80 insertions(+), 95 deletions(-)
+
+* e37e606 2025-12-02 22:33 EST Added inline testing| 
+|  lib/FileSaver.ml   | 29 ++++++++++++++++++++++++++++-
+|  lib/ImageLoader.ml | 32 +++++++++++++++++++++++---------
+|  2 files changed, 51 insertions(+), 10 deletions(-)
+
+* 6a8b4a3 2025-12-02 21:47 EST Fixed cut interface| 
+|  bin/main.ml | 44 ++++++--------------------------------------
+|  1 file changed, 6 insertions(+), 38 deletions(-)
+
+* 26ca0f1 2025-12-02 21:39 EST added test cases for crop and invert| 
+|  test/test_ImageOps.ml | 27 +++++++++++++++++++++++++++
+|  1 file changed, 27 insertions(+)
+
+*   21c1e32 2025-12-02 21:30 EST Merge branch 'main' of https://github.com/gregparent21/CS3110_Final_Project
+|\  
+| *   883a7e7 2025-12-02 21:25 EST Merge branch 'main' of https://github.com/gregparent21/CS3110_Final_Project
+| |\  
+| | * b3623fe 2025-12-02 21:23 EST more tests and fixed pixelate| | | 
+| | |  bin/main.ml           |  7 +++++--
+| | |  test/test_ImageOps.ml | 13 ++++++-------
+| | |  2 files changed, 11 insertions(+), 9 deletions(-)
+
+| * | 68a51c2 2025-12-02 21:25 EST added tests for crop and invert
+| |/  | |   
+| |    test/test_ImageOps.ml | 27 +++++++++++++++++++++++++++
+| |    1 file changed, 27 insertions(+)
+
+* | 32f41e3 2025-12-02 21:28 EST Merge branch 'main' of https://github.com/gregparent21/CS3110_Final_Project
+|\| 
+| * 6f45737 2025-12-02 21:12 EST updated the shrink function calls so that it shouldn't error anymore. Added more tests as well. Some of the tests are inline and can later be converted to OUnit| | 
+| |  lib/ImageOps.ml       | 26 ++++++++++++++++++++++++++
+| |  test/test_ImageOps.ml | 19 +++++++++++++++++--
+| |  2 files changed, 43 insertions(+), 2 deletions(-)
+
+| * a9ee3af 2025-12-02 21:10 EST Fix shrink updated parameters in main| | 
+| |  bin/main.ml | 2 +-
+| |  1 file changed, 1 insertion(+), 1 deletion(-)
+
+| * d042b63 2025-12-02 21:05 EST Start implementing text window - Created window on the bottom to display messages - This is used rather than the terminal - Displays instructions on how to use tools for example| | 
+| |  bin/main.ml | 183 ++++++++++++++++++++++++++++++++++----------------------
+| |  1 file changed, 113 insertions(+), 70 deletions(-)
+
+| * c9f3c02 2025-12-02 20:36 EST updated specification for shrink and for pixelate. Updated the code for the shrink function to no longer take a 'user' value and now just shrink by a constant factor of 2| | 
+| |  lib/ImageOps.ml  | 28 ++++++++++------------------
+| |  lib/ImageOps.mli |  6 +++---
+| |  2 files changed, 13 insertions(+), 21 deletions(-)
+
+* | 51ae9f7 2025-12-02 21:22 EST Implement fill
+|/  |   
+|    bin/main.ml               |  91 +++++++++++++---------
+|    lib/ImageOps.ml           | 131 ++++++++++++++++++-------------
+|    lib/ImageOps.mli          |  16 ++--
+|    test/test_FinalProject.ml | 137 +--------------------------------
+|    test/test_ImageOps.ml     | 175 ++++++++++++++++++++++++++++++++++++++++++
+|    5 files changed, 318 insertions(+), 232 deletions(-)
+
+* 3490bf9 2025-12-02 12:00 EST Built out test_ImageOps.ml - Tested mirror, invert, shrink, and pixelate - Achieved greater line coverage for ImageOps.ml| 
+|  test/test_ImageOps.ml      | 65 ++++++++++++++++++++++++++++++++++++++++++++
+|  test/test_Image_Loading.ml |  1 -
+|  test/test_runner.ml        |  7 ++++-
+|  3 files changed, 71 insertions(+), 2 deletions(-)
+
+* d37c8d0 2025-12-01 21:52 EST Begin to implement file saving - Works with png, not yet with jpg - Connected to toolbar - Fixed some sizing issues with the UI  Please enter the commit message for your changes. Lines starting| 
+|  AUTHORS.md        |  3 ++-
+|  bin/main.ml       | 40 ++++++++++++++++++++++++++++++++++++++--
+|  lib/FileSaver.ml  | 38 ++++++++++++++++++++++++++++++++++++++
+|  lib/FileSaver.mli | 11 +++++++++++
+|  lib/dune          |  2 +-
+|  5 files changed, 90 insertions(+), 4 deletions(-)
+
+* 52365be 2025-12-01 19:30 EST Fix toolbar - Connected mirror - Fixed issue where compress and invert were overlapping| 
+|  bin/main.ml | 39 +++++++++++++++++++++++++++++----------
+|  1 file changed, 29 insertions(+), 10 deletions(-)
+
+*   7fc62ed 2025-12-01 19:22 EST Merge pull request #1 from gregparent21/testing
+|\  
+| * 92b3e4a 2025-12-01 19:21 EST Refacter code for testing purposes - Moved image loading and pattern matching to ImageLoader.ml - Improved toolbar UI to separate cut types| | 
+| |  bin/main.ml | 47 ++++++++++++++++++++++++++++++++++++++---------
+| |  1 file changed, 38 insertions(+), 9 deletions(-)
+
+| * 67fa800 2025-12-01 19:09 EST Testing
+|/  |   
+|    bin/main.ml         | 148 +++++++++++++-----------------------------------
+|    lib/ImageLoader.ml  |  57 +++++++++++++++++++
+|    lib/ImageLoader.mli |   7 +++
+|    lib/dune            |  11 ++--
+|    4 files changed, 109 insertions(+), 114 deletions(-)
+
+* 5e59f6e 2025-11-30 21:52 EST added pixelate tool and interactive button to the UI| 
+|  bin/main.ml      | 39 +++++++++++++++++++++++++++++++++++++--
+|  lib/ImageOps.ml  | 27 +++++++++++++++++++++++++++
+|  lib/ImageOps.mli |  7 +++++++
+|  3 files changed, 71 insertions(+), 2 deletions(-)
+
+*   555a257 2025-11-30 19:53 EST merge conflict resolve
+|\  
+| * 0a5efa1 2025-11-20 17:45 EST Updated INSTALL.md| | 
+| |  INSTALL.md | 4 ++++
+| |  1 file changed, 4 insertions(+)
+
+| * 06e3dac 2025-11-20 13:54 EST Add test cases for image loading and clicking| | 
+| |  test/dune                  |  3 +--
+| |  test/test_Image_Loading.ml | 38 +++++++++++++++++++++++++++++++++++---
+| |  test/test_runner.ml        |  7 +++++++
+| |  3 files changed, 43 insertions(+), 5 deletions(-)
+
+| * 96cf9ce 2025-11-20 13:48 EST Update bisect reports| | 
+| |  bisect149093063.coverage | 1 -
+| |  bisect25078504.coverage  | 1 -
+| |  bisect403662186.coverage | 1 -
+| |  bisect494433536.coverage | 1 -
+| |  bisect53783947.coverage  | 1 -
+| |  bisect910773280.coverage | 1 -
+| |  bisect910839116.coverage | 1 -
+| |  bisect945499584.coverage | 1 -
+| |  bisect960915023.coverage | 1 -
+| |  lib/dune                 | 2 +-
+| |  10 files changed, 1 insertion(+), 10 deletions(-)
+
+| * 3c851d0 2025-11-19 19:04 EST Store current img_x, img_y, width, height in refs| | 
+| |  bin/main.ml              | 74 ++++++++++++++++++++++++++++++++------------
+| |  bisect149093063.coverage |  1 +
+| |  bisect25078504.coverage  |  1 +
+| |  bisect494433536.coverage |  1 +
+| |  bisect910773280.coverage |  1 +
+| |  bisect910839116.coverage |  1 +
+| |  bisect945499584.coverage |  1 +
+| |  bisect960915023.coverage |  1 +
+| |  lib/ImageOps.ml          | 55 +++++++++++++++++++-------------
+| |  9 files changed, 94 insertions(+), 42 deletions(-)
+
+| * 84a1678 2025-11-19 19:04 EST Add crop tool and refactor image coordinate handling.| | 
+| |  bisect403662186.coverage | 1 +
+| |  bisect53783947.coverage  | 1 +
+| |  2 files changed, 2 insertions(+)
+
+| *   ec975a6 2025-11-19 18:26 EST Merge branch 'main' of https://github.com/gregparent21/CS3110_Final_Project
+| |\  
+| | *   fb8d408 2025-11-19 16:24 EST Merge branch 'main' of https://github.com/gregparent21/CS3110_Final_Project
+| | |\  
+| | * | 394d66d 2025-11-19 16:24 EST Update test cases| | | | 
+| | | |  _coverage/coverage.css         | 500 ++++++++++++++++++++++++
+| | | |  _coverage/coverage.js          | 164 ++++++++
+| | | |  _coverage/highlight.pack.js    |   2 +
+| | | |  _coverage/index.html           |  26 ++
+| | | |  _coverage/lib/ImageOps.ml.html | 691 +++++++++++++++++++++++++++++++++
+| | | |  bin/main.ml                    |  11 +-
+| | | |  lib/ImageOps.ml                |  24 +-
+| | | |  lib/ImageOps.mli               |   7 +-
+| | | |  lib/dune                       |   6 +-
+| | | |  test/test_FinalProject.ml      |   5 +-
+| | | |  10 files changed, 1418 insertions(+), 18 deletions(-)
+
+| * | | c2bc572 2025-11-19 18:20 EST Implemented Cut functionality, added a button for cut mode
+| | |/  
+| |/|   | | |   
+| | |    bin/main.ml      | 76 +++++++++++++++++++++++++++++++++++++++++-------
+| | |    lib/ImageOps.ml  | 39 ++++++++++++++++++++++---
+| | |    lib/ImageOps.mli | 11 +++++--
+| | |    3 files changed, 110 insertions(+), 16 deletions(-)
+
+| * | 3425bbe 2025-11-19 14:39 EST Updated AUTHORS.md
+| |/  | |   
+| |    AUTHORS.md | 7 ++++++-
+| |    1 file changed, 6 insertions(+), 1 deletion(-)
+
+| * 438c2a1 2025-11-19 13:21 EST Implement mirror| | 
+| |  bin/main.ml | 11 ++++++++++-
+| |  1 file changed, 10 insertions(+), 1 deletion(-)
+
+| * 40f2d9d 2025-11-19 12:34 EST Update gallery desc| | 
+| |  gallery.yaml | 3 ++-
+| |  1 file changed, 2 insertions(+), 1 deletion(-)
+
+| * 9681ec1 2025-11-19 12:15 EST Added Mirror/Flip function that horizontally flips image| | 
+| |  lib/ImageOps.ml  | 11 ++++++-----
+| |  lib/ImageOps.mli |  1 +
+| |  2 files changed, 7 insertions(+), 5 deletions(-)
+
+| *   ebb0274 2025-11-19 12:14 EST Merge branch 'main' of github.com:gregparent21/CS3110_Final_Project
+| |\  
+| | * 24a2347 2025-11-19 11:30 EST Added authors to AUTHORS.md, updated instructions to INSTALL.md, and finished gallery.yaml| | | 
+| | |  AUTHORS.md   |  1 +
+| | |  INSTALL.md   | 11 +++++++++++
+| | |  gallery.yaml | 14 +++++---------
+| | |  3 files changed, 17 insertions(+), 9 deletions(-)
+
+| * | 7d65ea9 2025-11-19 12:13 EST Added Mirror/Flip tool that horizontally flips image| | | 
+| | |  lib/ImageOps.ml  | 10 ++++++++++
+| | |  lib/ImageOps.mli |  4 ++++
+| | |  2 files changed, 14 insertions(+)
+
+| * | f7bb59e 2025-11-19 11:30 EST Added author list to AUTHORS.md
+| |/  | |   
+| |    AUTHORS.md   |  1 +
+| |    INSTALL.md   | 11 +++++++++++
+| |    gallery.yaml | 14 +++++---------
+| |    3 files changed, 17 insertions(+), 9 deletions(-)
+
+| * 8ced60f 2025-11-18 22:38 EST Begin paste implementation| | 
+| |  bin/main.ml      | 63 +++++++++++++++++++++++++++++++++++++++++++++++-----
+| |  lib/ImageOps.ml  | 62 +++++++++++++++++++++------------------------------
+| |  lib/ImageOps.mli |  5 +++++
+| |  3 files changed, 87 insertions(+), 43 deletions(-)
+
+| * e5b4b3b 2025-11-18 21:56 EST Implement cut| | 
+| |  bin/main.ml | 2 ++
+| |  1 file changed, 2 insertions(+)
+
+| * 20074c1 2025-11-18 21:52 EST Implement cut_square to user| | 
+| |  bin/main.ml      | 70 +++++++++++++++++++++++++++++++++++++++-------------
+| |  lib/ImageOps.ml  | 15 +++++++++--
+| |  lib/ImageOps.mli |  3 +--
+| |  3 files changed, 67 insertions(+), 21 deletions(-)
+
+| * 263e16c 2025-11-18 20:44 EST Implemented color inversion on the whole image. Added button to the sidebar to do it.| | 
+| |  bin/main.ml      | 28 +++++++++++++++++++++++++++-
+| |  lib/ImageOps.ml  | 12 ++++++++++++
+| |  lib/ImageOps.mli |  4 ++++
+| |  3 files changed, 43 insertions(+), 1 deletion(-)
+
+* | 96aa8a6 2025-11-30 19:50 EST added a new pixelate function to the .mli file
+|/  |   
+|    lib/ImageOps.mli | 4 ++++
+|    1 file changed, 4 insertions(+)
+
+* 3ea17c0 2025-11-18 18:43 EST changed some text printed| 
+|  bin/main.ml | 4 +---
+|  1 file changed, 1 insertion(+), 3 deletions(-)
+
+* 225f4c5 2025-11-18 18:37 EST UI for shrinking. Renamed it from compression because this is really just a shrink tool. If pressed too many times image will dissapear. Next step is testing| 
+|  bin/main.ml     | 22 +++++++++++++++-------
+|  lib/ImageOps.ml | 11 ++++++-----
+|  2 files changed, 21 insertions(+), 12 deletions(-)
+
+* d096755 2025-11-18 16:14 EST Updated the interface for buttons so that they are no longer separate and now multiple buttons will reside in one function as opposed to another.\n- Might want to separate control, but for now I combined it into one thing.\n- Updated the shrink function to take a factor parameter that the user can specify (which will be implemented later).\n- Still need to work on integrating the compress function to UI.| 
+|  bin/main.ml      | 58 ++++++++++++++++++++++++++++++++++++------------------
+|  lib/ImageOps.ml  | 40 ++++++++++++++++++++-----------------
+|  lib/ImageOps.mli | 12 ++++++-----
+|  3 files changed, 68 insertions(+), 42 deletions(-)
+
+* 5fdfebc 2025-11-18 12:41 EST Color Change func| 
+|  .DS_Store        | Bin 0 -> 6148 bytes
+|  lib/ImageOps.ml  |  15 +++++++++++++++
+|  lib/ImageOps.mli |   5 +++++
+|  3 files changed, 20 insertions(+)
+
+* 267790b 2025-11-18 11:04 EST Update README with clearer setup instructions| 
+|  README.md | 6 +++---
+|  1 file changed, 3 insertions(+), 3 deletions(-)
+
+* 8c47949 2025-11-17 22:23 EST Fixing Git Issue| 
+|  README.md       |  3 ++-
+|  lib/ImageOps.ml | 44 +++++++++++++++++++++++++++++++++++++++++++-
+|  2 files changed, 45 insertions(+), 2 deletions(-)
+
+*   0a8c256 2025-11-17 22:22 EST Merge branch 'main' of https://github.com/gregparent21/CS3110_Final_Project
+|\  
+| *   203a2d8 2025-11-17 22:09 EST resolving merge conflict
+| |\  
+| * | fabed4d 2025-11-17 22:08 EST Updated the averaging of pixels. - Renamed it from compress to shrink which I felt more accurately reflected the nature of the function. - Added various helper functions for this first implementation of the function. - Specified functionality in the .mli file - Updated the README slightly to be more specific for mac users| | | 
+| | |  README.md       |   3 +-
+| | |  bin/main.ml     | 125 +++++++++++++++++++++++++-------------------------
+| | |  lib/ImageOps.ml |  44 +++++++++++++++++-
+| | |  3 files changed, 107 insertions(+), 65 deletions(-)
+
+* | | a1f35d7 2025-11-17 22:18 EST Implement cut_advanced
+| |/  
+|/|   | |   
+| |    bin/main.ml               | 13 ++++---------
+| |    lib/ImageOps.ml           |  4 +++-
+| |    test/test_FinalProject.ml | 14 +++++++-------
+| |    3 files changed, 14 insertions(+), 17 deletions(-)
+
+* | 5a68406 2025-11-17 21:56 EST Update cut_advanced| | 
+| |  lib/ImageOps.ml           | 11 ++++---
+| |  test/test_FinalProject.ml | 75 +++++++++++++++++++++++++++++++++++++++----
+| |  2 files changed, 74 insertions(+), 12 deletions(-)
+
+* | 62fefd6 2025-11-17 21:26 EST Merge branch 'main' of https://github.com/gregparent21/CS3110_Final_Project
+|\| 
+| *   9770b84 2025-11-17 20:55 EST Merge branch 'main' of github.com:gregparent21/CS3110_Final_Project
+| |\  
+| * | 9b26363 2025-11-17 20:54 EST changes for pulling| | | 
+| | |  bin/main.ml      | 4 ++--
+| | |  lib/ImageOps.ml  | 4 ++++
+| | |  lib/ImageOps.mli | 4 ++++
+| | |  3 files changed, 10 insertions(+), 2 deletions(-)
+
+* | | 25b827f 2025-11-17 21:19 EST Add test cases for on_segment
+| |/  
+|/|   | |   
+| |    test/test_FinalProject.ml | 29 +++++++++++++++++++++++++++++
+| |    1 file changed, 29 insertions(+)
+
+* | b109bd0 2025-11-17 17:50 EST Merge branch 'main' of https://github.com/gregparent21/CS3110_Final_Project
+|\| 
+| * b32f597 2025-11-17 16:38 EST added a button for compression, working on its functionality| | 
+| |  bin/main.ml | 12 +++++++++---
+| |  1 file changed, 9 insertions(+), 3 deletions(-)
+
+| * 20be307 2025-11-17 16:12 EST updated README to reflect windows requirements (removed the Xquartz requirement for Windows)| | 
+| |  README.md | 2 +-
+| |  1 file changed, 1 insertion(+), 1 deletion(-)
+
+* | 36d45cb 2025-11-17 17:42 EST Update cut_advanced
+|/  |   
+|    lib/ImageOps.ml           | 41 ++++++++++++++++++++++++++++++++++++++---
+|    lib/ImageOps.mli          |  4 ++++
+|    test/test_FinalProject.ml | 20 ++++++++------------
+|    3 files changed, 50 insertions(+), 15 deletions(-)
+
+* b0450b3 2025-11-17 15:14 EST Add files for MS2 submission| 
+|  INSTALL.md                 |  0
+|  RepoURL.txt                |  1 +
+|  gallery.yaml               | 36 ++++++++++++++++++++++++++++++++++++
+|  test/dune                  |  1 +
+|  test/test_Image_Loading.ml | 14 ++++++++++++++
+|  5 files changed, 52 insertions(+)
+
+* e65b3a2 2025-11-17 13:21 EST Fix filepath| 
+|  README.md | 2 +-
+|  1 file changed, 1 insertion(+), 1 deletion(-)
+
+* f4839e0 2025-11-17 13:06 EST Start to connect cut to UI| 
+|  bin/main.ml | 120 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+|  1 file changed, 118 insertions(+), 2 deletions(-)
+
+* e2352f1 2025-11-17 00:12 EST Implement cut| 
+|  lib/ImageOps.ml           | 65 ++++++++++++++++++++++++++++++++++++++++++---
+|  lib/ImageOps.mli          | 23 +++++++++++-----
+|  lib/dune                  |  3 ++-
+|  test/dune                 |  3 ++-
+|  test/test_FinalProject.ml | 54 +++++++++++++++++++++++++++++++++++++
+|  5 files changed, 135 insertions(+), 13 deletions(-)
+
+* ad0c04b 2025-11-15 09:33 EST Add click handling for getting pixels - Also added x and y pixel axis - Centered the image in the frame - Prints the coords of the pixels you click| 
+|  README.md        |  2 ++
+|  bin/main.ml      | 85 ++++++++++++++++++++++++++++++++++++++++++++----------
+|  lib/ImageOps.ml  |  8 +++++
+|  lib/ImageOps.mli | 14 +++++++++
+|  lib/dune         |  3 +-
+|  5 files changed, 96 insertions(+), 16 deletions(-)
+
+* 1b9478c 2025-11-14 13:29 EST Update test images:| 
+|  data/cmyk.tif    | Bin 0 -> 443750 bytes
+|  data/rgba32.png  | Bin 0 -> 70758 bytes
+|  requirements.txt |   2 +-
+|  3 files changed, 1 insertion(+), 1 deletion(-)
+
+* 3fc00d9 2025-11-14 13:29 EST Update README| 
+|  README.md | 1 +
+|  1 file changed, 1 insertion(+)
+
+* 23ba37e 2025-11-11 09:29 EST Update README with correct command| 
+|  README.md | 2 +-
+|  1 file changed, 1 insertion(+), 1 deletion(-)
+
+* 3ba16a4 2025-11-10 21:24 EST Finish implementing png image uploading - Accounts for different types of png color formats - Creates popup window| 
+|  README.md              |  10 ++++-
+|  bin/dune               |   2 +-
+|  bin/main.ml            | 108 ++++++++++++++++++++++++++++++-----------------
+|  data/Bugs_Bunny.svg    |   1 +
+|  data/Peter_Griffin.png | Bin 0 -> 79350 bytes
+|  data/hamburger.jpeg    | Bin 0 -> 5636 bytes
+|  requirements.txt       |   8 ++++
+|  7 files changed, 88 insertions(+), 41 deletions(-)
+
+* b2d3229 2025-11-10 16:41 EST Start to implement file loading - Not fully working, I currently have it default to rainbow partern on error - A few random dependencies to install| 
+|  FinalProject.opam      |  33 ++++++++++++++++++++++
+|  README.md              |   5 ++++
+|  bin/dune               |   2 +-
+|  bin/main.ml            |  72 ++++++++++++++++++++++++++++++++++++++++++++++-
+|  data/Homer_Simpson.png | Bin 0 -> 46631 bytes
+|  dune-project           |   2 +-
+|  6 files changed, 111 insertions(+), 3 deletions(-)
+
+* 195f96e 2025-10-31 12:14 EDT ID| 
+|  README.md | 2 +-
+|  1 file changed, 1 insertion(+), 1 deletion(-)
+
+* 79478d8 2025-10-31 11:35 EDT Update authors list in README.md| 
+|  README.md | 2 +-
+|  1 file changed, 1 insertion(+), 1 deletion(-)
+
+* d6b0b82 2025-10-30 22:42 EDT add Julian Meinke to authors list| 
+|  README.md | 2 +-
+|  1 file changed, 1 insertion(+), 1 deletion(-)
+
+* a2d0b44 2025-10-30 19:30 EDT Added name to README (Evan Holly)| 
+|  README.md | 2 +-
+|  1 file changed, 1 insertion(+), 1 deletion(-)
+
+* 2876f13 2025-10-29 13:32 EDT Initial Commit| 
+|  .gitignore   | 2 ++
+|  _build/.lock | 0
+|  _build/log   | 7 -------
+|  3 files changed, 2 insertions(+), 7 deletions(-)
+
+* 09e989c 2025-10-29 13:24 EDT Initial Commit  
+   .ocamlformat              |  6 ++++++
+   FinalProject.opam         |  0
+   README.md                 |  6 ++++++
+   _build/.lock              |  0
+   _build/log                |  7 +++++++
+   bin/dune                  |  4 ++++
+   bin/main.ml               |  1 +
+   dune                      |  1 +
+   dune-project              | 26 ++++++++++++++++++++++++++
+   lib/dune                  |  2 ++
+   test/dune                 |  2 ++
+   test/test_FinalProject.ml |  0
+   12 files changed, 55 insertions(+)
