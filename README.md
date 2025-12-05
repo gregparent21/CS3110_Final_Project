@@ -5,12 +5,6 @@ Authors:
 - Milo Schlittgen-Li, ms3626@cornell.edu
 - Nate Benz, nab267@cornell.edu
 
-GenAI Usage:
-- Greg: In reading files, I discovered that some files used a CMYK color format rather than RGB. However, unlike other file formats, I was having trouble using the built in libraries to switch to RGB24. I had ChatGPT explain to me and help implement [cmyk_pixel_to_rgb] as I was unaware of some of the calculations involved in switching color types
-- Greg: I was having trouble printing live code of the clicked pixels, as it would only print once the image popup was terminated. I asked ChatGPT and it told me about [flush stdout] which solved this issue.
-- Julian: When doing the image shrinking algorithm, I was unsure how to extract RGB values from the Graphics.image type.
-
-
 Currently to run on Mac run all the commands below. For Windows devices, you do not need to install or run XQuartz (This is because Xquartz is required to essentially emulate a windows environment): 
 - Must opam install everything in requirements.txt. Note, you must be in OCaml version 4.14.2 for the packages to properly install. (also install Xquartz on mac)
 - Run [open -a XQuartz] (only for mac users)
@@ -18,4 +12,4 @@ Currently to run on Mac run all the commands below. For Windows devices, you do 
 - Run [dune exec bin/main.exe data/Homer_Simpson.png]
 
 Notes: 
-- Currently only works with png
+- Only works with png
